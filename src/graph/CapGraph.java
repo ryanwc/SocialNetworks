@@ -100,15 +100,14 @@ public class CapGraph implements Graph {
 		for (Vertex outVertex : centOutVertsInParent) {
 			
 			centOutVertsInParentSet.add(outVertex);
+			// add the out vertex and the edge between it and center
+			egonet.addVertex(outVertex.getID());
+			egonet.addEdge(center, outVertex.getID());
 		}
 		
 		for (Vertex outVertex : centOutVertsInParent) {
 			
 			int outVertexID = outVertex.getID();
-			
-			// add the out vertex and the edge between it and center
-			egonet.addVertex(outVertexID);
-			egonet.addEdge(center, outVertexID);
 			
 			List<Vertex> outVertOutVertsInParent = outVertex.getOutEdges();
 			
