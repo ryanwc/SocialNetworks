@@ -144,17 +144,32 @@ public class CapGraph implements Graph {
 			vertexIDStack.push(vertexID);
 		}
 		
-		System.out.println("doing first pass");
 		Stack<Integer> finishOrder = allDFS(this, vertexIDStack, false);
-		System.out.println("doing transpose");
 		CapGraph thisTranspose = getTranspose();
 		// don't need the finishing order after second pass
-		System.out.println("doing second pass");
 		allDFS(thisTranspose, finishOrder, true);
 		
 		return SCCList;
 	}
 	
+	/** Use depth-first search (DFS) to discover all vertices and all strongly
+	 * connected components (SCCs) in a graph.
+	 * 
+	 * Returns vertices in a stack with later finishing DFS times on top to
+	 * first finishing DFS times on bottom.  A vertex is "finished" with 
+	 * DFS when DFS has discovered everything there is to discover from that
+	 * vertex.
+	 * 
+	 * @param graph is the graph in which to do DFS and uncover SCCs.  If
+	 *   secondPass is true, this should be a transpose of the original graph.
+	 * @param verticesToVisit is the (possibly ordered) list of all vertices to
+	 *   visit.  If secondPass is true, the stack should be ordered as if it were
+	 *   given by the return value of this method on the first pass.
+	 * @param secondPass is a boolean that indicates whether the graph is the
+	 *   transpose of the graph in which we want to discover SCCs and whether
+	 *   verticesToVisit is ordered according to the ordering mentioned above.
+	 * @return 
+	 */
 	public Stack<Integer> allDFS(CapGraph graph, Stack<Integer> verticesToVisit,
 								 boolean secondPass) {
 		
@@ -165,11 +180,8 @@ public class CapGraph implements Graph {
 			
 			int vertexToVisit = verticesToVisit.pop();
 			
-			System.out.println("starting a search from " + vertexToVisit);
-			
 			if (!visited.contains(vertexToVisit)) {
-				
-				System.out.println(vertexToVisit + "not visited so exploring");
+
 				CapGraph SCC = null;
 				
 				if (secondPass) {
@@ -180,7 +192,6 @@ public class CapGraph implements Graph {
 					SCC = new CapGraph("SCC with Parent '" + name + "' and " +
 									   "Root " + vertexToVisit);
 					SCC.addVertex(vertexToVisit);
-					System.out.println("creating an SCC with root " + vertexToVisit);
 				}
 
 				singleDFS(graph, vertexToVisit, vertexToVisit, 
@@ -196,21 +207,42 @@ public class CapGraph implements Graph {
 		return finished;
 	}
 	
+	/** Do a depth-first search as a helper method for discovering SCCs.
+	 * 
+	 * Do a DFS in a directed graph from a particular vertex as part of 
+	 * computing either the "finishing order" of all vertices in the graph 
+	 * or assigning vertices to SCCs.
+	 * 
+	 * If second pass is false, this method is useful because it populates
+	 * the "finished" stack passed to it, which gives the ordering that 
+	 * should be used with the given graph's transpose to discover SCCs.
+	 * 
+	 * If secondPass is true, this method will populate the graph's
+	 * SCC list.
+	 * 
+	 * @param graph is the graph in which to do the DFS.
+	 * @param vertexID is the vertex from which to do the DFS.
+	 * @param root is the root of the current SCC.
+	 * @param visited is the set of vertices that have been discovered
+	 *   by DFS so far.
+	 * @param finished is the list of vertices from which DFS has already
+	 *   discovered all vertices there are to discover.
+	 * @param secondPass is a boolean that indicates whether the correct
+	 *   finishing order has already been calculated and whether the SCC
+	 *   list should be populated.
+	 * @param SCC is the current SCC (this should be be null if secondPass
+	 *   is false).
+	 */
 	public void singleDFS(CapGraph graph, int vertexID, int root,
 						  Set<Integer> visited, Stack<Integer> finished,
 						  boolean secondPass, CapGraph SCC) {
 		
 		visited.add(vertexID);
 		
-		if (secondPass) {
-		System.out.println("SCC contains " + SCC.getVertices().keySet() + " vertices");
-		}
-		
 		Vertex vertex = graph.vertices.get(vertexID);
 		
 		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
 			// TODO: copy other info (e.g. vertex name)
-			System.out.println("adding " + vertexID + " to current SCC");
 			SCC.addVertex(vertexID);
 		}
 		
@@ -224,31 +256,23 @@ public class CapGraph implements Graph {
 				// it isn't already in this SCC
 				if (!visited.contains(neighborID) &&
 					!SCC.getVertices().keySet().contains(neighborID)) {
-					
-					System.out.println("adding " + neighborID + " to current SCC");
+
 					SCC.addVertex(neighborID);
 				}
 				
 				// if we added the neighbor to the SCC, add the edge
 				if (SCC.getVertices().keySet().contains(neighborID)) {
-					System.out.println("adding edge from " + vertexID + " to " + neighborID + " to current SCC");
 					SCC.addEdge(vertexID, neighborID);
-					List<Vertex> thisList = SCC.getVertices().get(vertexID).getOutEdges();
-					for (Vertex outNeighbor : thisList) {
-						System.out.println(outNeighbor.getID());
-					}	
 				}
 			}
 			
 			if (!visited.contains(neighborID)) {
 				
-				System.out.println("continuing DFS with " + neighborID);
 				singleDFS(graph, neighborID, root, visited, finished,
 						  secondPass, SCC);
 			}
 		}
 		
-		System.out.println("finished with " + vertexID);
 		finished.push(vertexID);
 	}
 	
