@@ -20,7 +20,7 @@ public class CapGraph implements Graph {
 	
 	private String name;
 	private Map<Integer,Vertex> vertices;
-	private Map<Integer,Graph> rootToSCC;
+	private List<Graph> SCCList;
 	
 	public CapGraph() {
 		
@@ -31,9 +31,8 @@ public class CapGraph implements Graph {
 		
 		this.name = name;
 		this.vertices = new HashMap<Integer,Vertex>();
-		
 		// might be inefficient because list will keep doubling
-		this.rootToSCC = new HashMap<Integer,Graph>();
+		this.SCCList = new ArrayList<Graph>();
 	}
 
 	/** Add a vertex to the graph.
@@ -145,16 +144,14 @@ public class CapGraph implements Graph {
 			vertexIDStack.push(vertexID);
 		}
 		
-		Stack<Integer> magicOrder = allDFS(this, vertexIDStack, false);
+		System.out.println("doing first pass");
+		Stack<Integer> finishOrder = allDFS(this, vertexIDStack, false);
+		System.out.println("doing transpose");
 		CapGraph thisTranspose = getTranspose();
-		Stack<Integer> finalOrder = allDFS(thisTranspose, magicOrder, true);
+		// don't need the finishing order after second pass
+		System.out.println("doing second pass");
+		allDFS(thisTranspose, finishOrder, true);
 		
-		List<Graph> SCCList = new ArrayList<Graph>(rootToSCC.size());
-		
-		for (Graph SCC : rootToSCC.values()) {
-			
-			SCCList.add(SCC);
-		}
 		return SCCList;
 	}
 	
@@ -168,11 +165,31 @@ public class CapGraph implements Graph {
 			
 			int vertexToVisit = verticesToVisit.pop();
 			
+			System.out.println("starting a search from " + vertexToVisit);
+			
 			if (!visited.contains(vertexToVisit)) {
 				
-				// if second pass, this vertex is the root of the SCC
+				System.out.println(vertexToVisit + "not visited so exploring");
+				CapGraph SCC = null;
+				
+				if (secondPass) {
+					// if second pass, need to create an SCC
+					// the SCC will include all vertexes reachable
+					// from this vertex
+					// TODO: copy other info (e.g. vertex name)
+					SCC = new CapGraph("SCC with Parent '" + name + "' and " +
+									   "Root " + vertexToVisit);
+					SCC.addVertex(vertexToVisit);
+					System.out.println("creating an SCC with root " + vertexToVisit);
+				}
+
 				singleDFS(graph, vertexToVisit, vertexToVisit, 
-						  visited, finished, secondPass);
+						  visited, finished, secondPass, SCC);
+				
+				if (secondPass) {
+					
+					SCCList.add(SCC);
+				}
 			}
 		}
 
@@ -181,43 +198,58 @@ public class CapGraph implements Graph {
 	
 	public void singleDFS(CapGraph graph, int vertexID, int root,
 						  Set<Integer> visited, Stack<Integer> finished,
-						  boolean secondPass) {
+						  boolean secondPass, CapGraph SCC) {
 		
 		visited.add(vertexID);
-		CapGraph thisSCC = null;
 		
-		if (secondPass && vertexID == root) {
-			
-			thisSCC = new CapGraph("SCC; Parent: " + name + "; "+ 
-								   "Root:" + vertexID);
-			thisSCC.addVertex(vertexID);
+		if (secondPass) {
+		System.out.println("SCC contains " + SCC.getVertices().keySet() + " vertices");
 		}
 		
 		Vertex vertex = graph.vertices.get(vertexID);
 		
+		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
+			// TODO: copy other info (e.g. vertex name)
+			System.out.println("adding " + vertexID + " to current SCC");
+			SCC.addVertex(vertexID);
+		}
 		
 		for (Vertex neighbor : vertex.getOutEdges()) {
 			
 			int neighborID = neighbor.getID();
 			
 			if (secondPass) {
-			
-				thisSCC.addVertex(neighborID);
-				thisSCC.addEdge(vertexID, neighborID);
+				// TODO: copy other info (e.g. vertex name, edge weights)
+				// if we haven't already visited it and
+				// it isn't already in this SCC
+				if (!visited.contains(neighborID) &&
+					!SCC.getVertices().keySet().contains(neighborID)) {
+					
+					System.out.println("adding " + neighborID + " to current SCC");
+					SCC.addVertex(neighborID);
+				}
+				
+				// if we added the neighbor to the SCC, add the edge
+				if (SCC.getVertices().keySet().contains(neighborID)) {
+					System.out.println("adding edge from " + vertexID + " to " + neighborID + " to current SCC");
+					SCC.addEdge(vertexID, neighborID);
+					List<Vertex> thisList = SCC.getVertices().get(vertexID).getOutEdges();
+					for (Vertex outNeighbor : thisList) {
+						System.out.println(outNeighbor.getID());
+					}	
+				}
 			}
 			
 			if (!visited.contains(neighborID)) {
 				
-				singleDFS(graph, neighborID, root, visited, finished, secondPass);
+				System.out.println("continuing DFS with " + neighborID);
+				singleDFS(graph, neighborID, root, visited, finished,
+						  secondPass, SCC);
 			}
 		}
 		
+		System.out.println("finished with " + vertexID);
 		finished.push(vertexID);
-		
-		if (secondPass && vertexID == root) {
-			
-			rootToSCC.put(vertexID, thisSCC);
-		}
 	}
 	
 	/** Reverse the edges of this graph.
