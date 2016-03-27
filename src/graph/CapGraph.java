@@ -147,7 +147,7 @@ public class CapGraph implements Graph {
 		}
 		
 		Stack<Integer> magicOrder = allDFS(this, vertexIDStack, false);
-		CapGraph thisTranspose = transposeGraph(this);
+		CapGraph thisTranspose = getTranspose();
 		Stack<Integer> finalOrder = allDFS(thisTranspose, magicOrder, true);
 		
 		List<Graph> SCCList = new ArrayList<Graph>(rootToSCC.size());
@@ -221,18 +221,51 @@ public class CapGraph implements Graph {
 		}
 	}
 	
-	/** Reverse the edges of a directed graph.
+	/** Reverse the edges of this graph.
 	 * 
-	 * If a directed graph is given, effectively returns a new graph object
-	 * that is a copy of the given graph.
+	 * Returns a new graph.
 	 * 
 	 * @param graph the graph to be transposed
-	 * @return a new (directed) graph object with all edges 
-	 * from the input graph reversed
+	 * @return a new CapGraph with all original graph edges reversed.
 	 */
-	public Graph transposeGraph(Graph graph) {
+	public CapGraph getTranspose() {
 		
-		return null;
+		CapGraph transposeGraph = new CapGraph(name + " (Transpose)");
+		
+		Map<Integer,Vertex> transposeVertices = transposeGraph.getVertices();
+		
+		for (int vertexID : this.vertices.keySet()) {
+			
+			Vertex vertex = vertices.get(vertexID);
+			
+			if (!transposeVertices.keySet().contains(vertexID)) {
+				
+				transposeGraph.addVertex(vertexID);
+			}
+			
+			List<Vertex> oldOutEdges = vertex.getOutEdges();
+			
+			// adjacency matrix representation may be useful
+			// to avoid linear inner loop
+			for (Vertex oldOutVert : oldOutEdges) {
+				
+				int oldOutVertID = oldOutVert.getID();
+				
+				if (!transposeVertices.keySet().contains(oldOutVertID)) {
+					
+					transposeGraph.addVertex(oldOutVertID);
+				}
+				
+				transposeGraph.addEdge(oldOutVertID, vertexID);
+			}
+		}
+		
+		return transposeGraph;
+	}
+	
+	public Map<Integer,Vertex> getVertices() {
+		
+		return vertices;
 	}
 
 	/** Return version of the map readable by UCSD auto-grader.
