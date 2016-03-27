@@ -13,10 +13,10 @@ public class GraphTest {
 	public static void main(String[] args) {
 		
 		//CapGraph testGraphOne = new CapGraph("Test One");
-		CapGraph smallTestGraph = new CapGraph("Small Test");
+		CapGraph testGraph = new CapGraph("Testing");
 		
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
-		GraphLoader.loadGraph(smallTestGraph, "data/small_test_graph.txt");
+		GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
 		//testGraph.printGraph();
 		
@@ -48,7 +48,16 @@ public class GraphTest {
 		
 		///*
 		//SCCs test
-		
+		List<Graph> SCCs = testGraph.getSCCs();
+		for (Graph graph : SCCs) {
+			((CapGraph)graph).printGraph();
+		}
+		CapGraph anotherTest = new CapGraph("SCC Test");
+		GraphLoader.loadGraph(anotherTest, "data/ryanTestSCC.txt");
+		SCCs = anotherTest.getSCCs();
+		for (Graph graph : SCCs) {
+			((CapGraph)graph).printGraph();
+		}
 		//*/
 	}
 }
