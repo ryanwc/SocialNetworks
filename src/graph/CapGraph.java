@@ -43,13 +43,20 @@ public class CapGraph implements Graph {
 		vertices.put(num,vertex);
 	}
 
-	/* (non-Javadoc)
+	/** Add a directed edge to the graph.
+	 * 
 	 * @see graph.Graph#addEdge(int, int)
+	 * 
+	 * @param from is the id of the edge's starting vertex
+	 * @param to is the id of the edge's ending vertex
 	 */
 	@Override
 	public void addEdge(int from, int to) {
-		// TODO Auto-generated method stub
-
+		
+		Vertex fromVertex = vertices.get(from);
+		Vertex toVertex = vertices.get(to);
+		
+		fromVertex.createEdge(toVertex);
 	}
 
 	/* (non-Javadoc)
