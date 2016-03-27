@@ -77,15 +77,44 @@ public class CapGraph implements Graph {
 		return null;
 	}
 
-	/* (non-Javadoc)
+	/** Return version of the map readable by UCSD auto-grader.
+	 * 
+	 * Returns a HashMap where the keys in the HashMap are all the vertices 
+	 * in the graph, and the values are the Set of vertices that are reachable 
+	 * from the vertex key via a directed edge. 
+	 * 
+	 * The returned representation ignores edge weights and multi-edges.
+	 * 
 	 * @see graph.Graph#exportGraph()
 	 */
 	@Override
 	public HashMap<Integer, HashSet<Integer>> exportGraph() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		HashMap<Integer,HashSet<Integer>> exportedGraph = 
+				new HashMap<Integer,HashSet<Integer>>(vertices.size()*2,1);
+		
+		for (int vertexID : vertices.keySet()) {
+			
+			Vertex vertex = vertices.get(vertexID);
+			
+			List<Vertex> outVertices = vertex.getOutEdges();
+			HashSet<Integer> outVertexIDSet = new HashSet<Integer>(outVertices.size()*2,1);
+			
+			for (Vertex outVertex : outVertices) {
+				
+				int outVertexID = outVertex.getID();
+				outVertexIDSet.add(outVertexID);
+			}
+			
+			exportedGraph.put(vertexID, outVertexIDSet);
+		}
+		
+		return exportedGraph;
 	}
 
+	/** Print a text representation of the graph to default output.
+	 * 
+	 */
 	public void printGraph() {
 		
 		System.out.println("This is a text representation of the graph " + 

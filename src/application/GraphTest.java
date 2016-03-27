@@ -7,10 +7,10 @@ public class GraphTest {
 
 	public static void main(String[] args) {
 		
-		CapGraph test = new CapGraph("Test");
+		CapGraph testGraph = new CapGraph("Test");
 		
-		GraphLoader.loadGraph(test, "data/small_test_graph.txt");
+		GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
-		test.printGraph();
+		testGraph.printGraph();
 	}
 }
