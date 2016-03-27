@@ -25,6 +25,11 @@ public class Vertex {
 	private String name;
 	private List<Vertex> outEdges;
 	
+	public Vertex(int vertexID) {
+		
+		this(vertexID, Integer.toString(vertexID));
+	}
+	
 	public Vertex(int vertexID, String name) {
 		
 		this.name = name;
