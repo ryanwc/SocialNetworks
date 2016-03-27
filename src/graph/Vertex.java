@@ -56,7 +56,7 @@ public class Vertex {
 		return name;
 	}
 	
-	public List<Vertex> outEdges() {
+	public List<Vertex> getOutEdges() {
 		
 		return outEdges;
 	}

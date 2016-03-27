@@ -86,4 +86,24 @@ public class CapGraph implements Graph {
 		return null;
 	}
 
+	public void printGraph() {
+		
+		System.out.println("This is a text representation of the graph " + 
+						   name + ":");
+		
+		for (int vertexID : vertices.keySet()) {
+			
+			Vertex vertex = vertices.get(vertexID);
+			
+			System.out.print("Vertex ID/Name: " + vertex.getID() + "/" +
+							 vertex.getName() + "; adjacency list: ");
+			
+			for (Vertex toVertex : vertex.getOutEdges()) {
+				
+				System.out.print(toVertex.getID() + ",");
+			}
+			
+			System.out.println();
+		}
+	}
 }
