@@ -357,6 +357,21 @@ public class CapGraph implements Graph {
 		
 		return exportedGraph;
 	}
+	
+	/*
+	 * Detect communities in the graph
+	 */
+	public void detectCommunities() {
+	/*
+		- Compute “betweenness” of all edges (i.e., calculate shortest path between every pair of vertices and count how many times each edge appears in a path)
+			- for each node v (O(v)) (linear at this point)
+			- bfs of graph starting at v (O(|V|+|E|)) (quadratic at this point)
+			- compute # of shortest paths from v to each other node
+			- distribute flow to edges along these paths (increment counter for each edge in each shortest path?)
+		- Remove edge(s) of highest betweenness
+		- Repeat with graph subsections until there are no more edges, or until have separated graph into desired number of components (O(|E|)) (cubic at this point)
+	*/
+	}
 
 	/** Print a text representation of the graph to default output.
 	 * 

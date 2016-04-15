@@ -21,8 +21,9 @@ public class Vertex {
 	 * Could also change "List<Vertex> outEdges" to 
 	 * "List<Map<Vertex,Integer>> outEdges" to store info about edge weights.
 	 */
-	private int vertexID;
+	private int vertexID; // unique ID for this community graph
 	private String name;
+	
 	private List<Vertex> outEdges;
 	
 	public Vertex(int vertexID) {
@@ -32,8 +33,9 @@ public class Vertex {
 	
 	public Vertex(int vertexID, String name) {
 		
-		this.name = name;
 		this.vertexID = vertexID;
+		this.name = name;
+		
 		this.outEdges = new ArrayList<Vertex>();
 	}
 	
