@@ -32,11 +32,11 @@ public class GraphLoader {
             int v1 = sc.nextInt();
             int v2 = sc.nextInt();
             if (!seen.contains(v1)) {
-                g.addVertex(v1);
+                g.addVertex(v1, 1);
                 seen.add(v1);
             }
             if (!seen.contains(v2)) {
-                g.addVertex(v2);
+                g.addVertex(v2, 1);
                 seen.add(v2);
             }
             g.addEdge(v1, v2);

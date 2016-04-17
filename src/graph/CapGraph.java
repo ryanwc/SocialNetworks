@@ -46,7 +46,7 @@ public class CapGraph implements Graph {
 	@Override 
 	public void addVertex(int num, int vertexType) {
 		
-		if (vertexType != 1) {
+		if (vertexType != DEFAULT_VERTEX) {
 			throw new IllegalArgumentException("CapGraph only supports "
 					+ "default vertices");
 		}
@@ -107,13 +107,13 @@ public class CapGraph implements Graph {
 			
 			centOutVertsInParentSet.add(outVertex);
 			// add the out vertex and the edge between it and center
-			egonet.addVertex(outVertex.getID(), DEFAULT_VERTEX);
-			egonet.addEdge(center, outVertex.getID());
+			egonet.addVertex(outVertex.getVertexID(), DEFAULT_VERTEX);
+			egonet.addEdge(center, outVertex.getVertexID());
 		}
 		
 		for (Vertex outVertex : centOutVertsInParent) {
 			
-			int outVertexID = outVertex.getID();
+			int outVertexID = outVertex.getVertexID();
 			
 			List<Vertex> outVertOutVertsInParent = outVertex.getOutEdges();
 			
@@ -124,7 +124,7 @@ public class CapGraph implements Graph {
 				// we created new verts for the egonet
 				if (centOutVertsInParentSet.contains(outVertOutVert)) {
 					
-					egonet.addEdge(outVertexID, outVertOutVert.getID());
+					egonet.addEdge(outVertexID, outVertOutVert.getVertexID());
 				}
 			}
 		}
@@ -255,7 +255,7 @@ public class CapGraph implements Graph {
 		
 		for (Vertex neighbor : vertex.getOutEdges()) {
 			
-			int neighborID = neighbor.getID();
+			int neighborID = neighbor.getVertexID();
 			
 			if (secondPass) {
 				// TODO: copy other info (e.g. vertex name, edge weights)
@@ -311,7 +311,7 @@ public class CapGraph implements Graph {
 			// to avoid linear inner loop
 			for (Vertex oldOutVert : oldOutEdges) {
 				
-				int oldOutVertID = oldOutVert.getID();
+				int oldOutVertID = oldOutVert.getVertexID();
 				
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
@@ -355,7 +355,7 @@ public class CapGraph implements Graph {
 			
 			for (Vertex outVertex : outVertices) {
 				
-				int outVertexID = outVertex.getID();
+				int outVertexID = outVertex.getVertexID();
 				outVertexIDSet.add(outVertexID);
 			}
 			
@@ -392,12 +392,12 @@ public class CapGraph implements Graph {
 			
 			Vertex vertex = vertices.get(vertexID);
 			
-			System.out.print("Vertex ID/Name: " + vertex.getID() + "/" +
+			System.out.print("Vertex ID/Name: " + vertex.getVertexID() + "/" +
 							 vertex.getName() + "; adjacency list: ");
 			
 			for (Vertex toVertex : vertex.getOutEdges()) {
 				
-				System.out.print(toVertex.getID() + ",");
+				System.out.print(toVertex.getVertexID() + ",");
 			}
 			
 			System.out.println();
