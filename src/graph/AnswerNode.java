@@ -19,11 +19,11 @@ public class AnswerNode extends Post implements Commentable {
 	private List<CommentNode> comments;
 	
 	public AnswerNode(int vertexID, String name, String communityName, 
-					  int postId, int rawScore, String body,
-					  int authorUserId, int commentCount, int viewCount,
+					  int postID, int rawScore, String body,
+					  int authorUserID, int commentCount,
 					  QuestionNode parentQuestion) {
-		super(vertexID, name, communityName, postId,
-			  rawScore, body, authorUserId, viewCount);
+		super(vertexID, name, communityName, postID,
+			  rawScore, body, authorUserID, parentQuestion.getViewCount());
 		
 		this.parentQuestion = parentQuestion;
 		this.comments = new ArrayList<CommentNode>(commentCount);

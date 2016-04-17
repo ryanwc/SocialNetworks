@@ -26,12 +26,12 @@ public class QuestionNode extends Post implements Commentable {
 	
 	public QuestionNode(int vertexID, String name, String communityName,
 						int postID, int rawScore, String body,
-						int authorUserId, int commentCount, int viewCount,
+						int authorUserID, int commentCount, int viewCount,
 						Integer acceptedAnswerID, String title, 
 						List<String> tags, int answerCount, 
 						int favoriteCount) {
 		super(vertexID, name, communityName, postID, rawScore,
-			  body, authorUserId, viewCount);
+			  body, authorUserID, viewCount);
 
 		this.acceptedAnswerID = acceptedAnswerID;
 		this.title = title;

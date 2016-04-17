@@ -48,7 +48,7 @@ public class Vertex {
 		outEdges.add(toVertex);
 	}
 	
-	public int getID() {
+	public int getVertexID() {
 		
 		return vertexID;
 	}

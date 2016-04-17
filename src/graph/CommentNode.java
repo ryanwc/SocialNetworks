@@ -16,11 +16,10 @@ public class CommentNode extends Post {
 	private Post parentPost; // currently, a QuestionNode or AnswerNode
 	
 	public CommentNode(int vertexID, String name, String communityName,
-					   int commentID, int parentPostID, int rawScore, 
-					   String body, int viewCount, int authorUserId,
-					   Post parentPost) {
+					   int commentID, int rawScore, String body,
+					   int authorUserID, Post parentPost) {
 		super(vertexID, name, communityName, commentID, 
-			  rawScore, body, authorUserId, viewCount);
+			  rawScore, body, authorUserID, parentPost.getViewCount());
 		
 		this.commentID = commentID;
 		this.parentPost = parentPost;

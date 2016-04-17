@@ -15,7 +15,6 @@ import java.util.List;
 
 public class UserNode extends Vertex {
 
-	private String communityName;
 	private int userID;
 	private int reputation;
 	private int age;
@@ -29,13 +28,11 @@ public class UserNode extends Vertex {
 	// for an extension that includes badge information
 	// private List<Badge> badges;
 	
-	public UserNode(String communityName, int vertexID, String name,
-					int userID, int reputation, int age, int upvotes, 
-					int downvotes, int accountID) {
+	public UserNode(int vertexID, String name, int userID, int reputation, 
+					int age, int upvotes, int downvotes, int accountID) {
 		super(vertexID, name);
 		
 		this.userID = userID;
-		this.communityName = communityName;
 		this.reputation = reputation;
 		this.age = age;
 		this.upvotes = upvotes;
@@ -45,14 +42,6 @@ public class UserNode extends Vertex {
 		this.questions = new ArrayList<QuestionNode>();
 		this.answers = new ArrayList<AnswerNode>();
 		this.comments = new ArrayList<CommentNode>();
-	}
-	
-	public String getCommunityName() {
-		return communityName;
-	}
-
-	public void setCommunityName(String communityName) {
-		this.communityName = communityName;
 	}
 
 	public int getUserID() {
