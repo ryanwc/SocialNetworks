@@ -13,26 +13,48 @@ package graph;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AnswerNode extends Post {
+public class AnswerNode extends Post implements Commentable {
 
 	private QuestionNode parentQuestion;
+	private List<CommentNode> comments;
 	
 	public AnswerNode(int vertexID, String name, String communityName, 
 					  int postId, int rawScore, String body,
 					  int authorUserId, int commentCount, int viewCount,
 					  QuestionNode parentQuestion) {
-		super(vertexID, name, communityName, postId, rawScore, 
-			  body, authorUserId, commentCount, viewCount);
+		super(vertexID, name, communityName, postId,
+			  rawScore, body, authorUserId, viewCount);
 		
 		this.parentQuestion = parentQuestion;
+		this.comments = new ArrayList<CommentNode>(commentCount);
 	}
 
+	/*
+	 * "Getters" for important/useful derived values
+	 */
+
+	public double calculateCommentsPerViews() {
+		return comments.size() / this.getViewCount();
+	}
+	
+	/*
+	 * Normal getters and setters
+	 */
+	
 	public QuestionNode getParentQuestion() {
 		return parentQuestion;
 	}
 
 	public void setParentQuestion(QuestionNode parentQuestion) {
 		this.parentQuestion = parentQuestion;
+	}
+	
+	public List<CommentNode> getComments() {
+		return comments;
+	}
+	
+	public void setComments(List<CommentNode> comments) {
+		this.comments = comments;
 	}
 
 	@Override

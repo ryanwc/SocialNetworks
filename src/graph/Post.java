@@ -18,23 +18,18 @@ public abstract class Post extends Vertex {
 	private int postID;
 	private int rawScore;
 	private String body; // (as rendered HTML)
-	private int authorUserId; // nullable in original data set; we exclude null
-	private int commentCount;
+	private int authorUserID; // nullable in original data set; we exclude null
 	private int viewCount;
 	
-	private List<CommentNode> comments;
-	
 	public Post(int vertexID, String name, String communityName, int postID, 
-				int rawScore, String body,  int authorUserId, 
-				int commentCount, int viewCount) {
+				int rawScore, String body,  int authorUserID, int viewCount) {
 		super(vertexID, name);
 		
 		this.communityName = communityName;
 		this.postID = postID;
 		this.rawScore = rawScore;
 		this.body = body;
-		this.authorUserId = authorUserId;
-		this.commentCount = commentCount;
+		this.authorUserID = authorUserID;
 		this.viewCount = viewCount;
 	}
 	
@@ -44,10 +39,6 @@ public abstract class Post extends Vertex {
 	
 	public double calculateUsefulness() {
 		return rawScore / viewCount;
-	}
-
-	public double calculateCommentsPerViews() {
-		return comments.size() / viewCount;
 	}
 	
 	/*
@@ -78,20 +69,12 @@ public abstract class Post extends Vertex {
 		this.body = body;
 	}
 
-	public int getAuthorUserId() {
-		return authorUserId;
+	public int getAuthorUserID() {
+		return authorUserID;
 	}
 
-	public void setAuthorUserId(int authorUserId) {
-		this.authorUserId = authorUserId;
-	}
-
-	public int getCommentCount() {
-		return commentCount;
-	}
-
-	public void setCommentCount(int commentCount) {
-		this.commentCount = commentCount;
+	public void setAuthorUserID(int authorUserID) {
+		this.authorUserID = authorUserID;
 	}
 
 	public int getViewCount() {
@@ -100,14 +83,6 @@ public abstract class Post extends Vertex {
 
 	public void setViewCount(int viewCount) {
 		this.viewCount = viewCount;
-	}
-
-	public List<CommentNode> getComments() {
-		return comments;
-	}
-
-	public void setComments(List<CommentNode> comments) {
-		this.comments = comments;
 	}
 
 	public String getCommunityName() {

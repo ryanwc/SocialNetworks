@@ -10,28 +10,20 @@
 
 package graph;
 
-public class CommentNode extends Vertex {
+public class CommentNode extends Post {
 
-	private int commentID; // unique to community
-	private int parentPostID;
-	private int rawScore;
-	private String body;
-	private int authorUserId; // nullable in original data set but exclude posts with nulls from our graph
+	private int commentID;
+	private Post parentPost; // currently, a QuestionNode or AnswerNode
 	
-	private int viewCount; // same as parentPost viewcount
-	
-	private double usefulness; // score divided by views; our independent variable
-	
-	public CommentNode(int vertexID, String name, int commentID,
-					   int parentPostID, int rawScore, String body, 
-					   int authorUserId) {
-		super(vertexID, name);
+	public CommentNode(int vertexID, String name, String communityName,
+					   int commentID, int parentPostID, int rawScore, 
+					   String body, int viewCount, int authorUserId,
+					   Post parentPost) {
+		super(vertexID, name, communityName, commentID, 
+			  rawScore, body, authorUserId, viewCount);
 		
-		this.setCommentID(commentID);
-		this.setRawScore(rawScore);
-		this.setParentPostID(parentPostID);
-		this.setBody(body);
-		this.setAuthorUserId(authorUserId);
+		this.commentID = commentID;
+		this.parentPost = parentPost;
 	}
 
 	public int getCommentID() {
@@ -42,35 +34,24 @@ public class CommentNode extends Vertex {
 		this.commentID = commentID;
 	}
 
-	public int getParentPostID() {
-		return parentPostID;
+	public Post getParentPost() {
+		return parentPost;
 	}
 
-	public void setParentPostID(int parentPostID) {
-		this.parentPostID = parentPostID;
+	public void setParentPost(Post parentPost) {
+		this.parentPost = parentPost;
 	}
-
-	public int getRawScore() {
-		return rawScore;
+	
+	@Override
+	public int getViewCount() {
+		// returns views of the parent post
+		return parentPost.getViewCount();
 	}
-
-	public void setRawScore(int rawScore) {
-		this.rawScore = rawScore;
+	
+	@Override
+	public void setViewCount(int viewCount) {
+		// sets the views of the parent post
+		parentPost.setViewCount(viewCount);
 	}
-
-	public String getBody() {
-		return body;
-	}
-
-	public void setBody(String body) {
-		this.body = body;
-	}
-
-	public int getAuthorUserId() {
-		return authorUserId;
-	}
-
-	public void setAuthorUserId(int authorUserId) {
-		this.authorUserId = authorUserId;
-	}
+	
 }

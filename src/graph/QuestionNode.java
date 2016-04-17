@@ -13,34 +13,42 @@ package graph;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QuestionNode extends Post {
+public class QuestionNode extends Post implements Commentable {
 	
-	private Integer acceptedAnswerId; // can be null
+	private Integer acceptedAnswerID; // can be null ("no accepted answer")
 	private String title;
-	private List<String> tags;
 	private int favoriteCount;
 	
 	private List<AnswerNode> answers;
+	private List<CommentNode> comments;
+	
+	private List<String> tags;
 	
 	public QuestionNode(int vertexID, String name, String communityName,
 						int postID, int rawScore, String body,
 						int authorUserId, int commentCount, int viewCount,
-						int acceptedAnswerId, String title, List<String> tags,
-						int answerCount, int favoriteCount) {
+						Integer acceptedAnswerID, String title, 
+						List<String> tags, int answerCount, 
+						int favoriteCount) {
 		super(vertexID, name, communityName, postID, rawScore,
-			  body, authorUserId, commentCount, viewCount);
+			  body, authorUserId, viewCount);
 
-		this.acceptedAnswerId = acceptedAnswerId;
+		this.acceptedAnswerID = acceptedAnswerID;
 		this.title = title;
 		this.tags = tags;
 		this.favoriteCount = favoriteCount;
 		
 		this.answers = new ArrayList<AnswerNode>(answerCount);
+		this.comments = new ArrayList<CommentNode>(commentCount);
 	}
 	
 	/*
 	 * "Getters" for important/useful derived values
 	 */
+
+	public double calculateCommentsPerViews() {
+		return comments.size() / this.getViewCount();
+	}
 	
 	public double calculateAnswersPerViews() {
 		return answers.size() / this.getViewCount();
@@ -55,11 +63,11 @@ public class QuestionNode extends Post {
 	 */
 
 	public Integer getAcceptedAnswerId() {
-		return acceptedAnswerId;
+		return acceptedAnswerID;
 	}
 
 	public void setAcceptedAnswerId(Integer acceptedAnswerId) {
-		this.acceptedAnswerId = acceptedAnswerId;
+		this.acceptedAnswerID = acceptedAnswerId;
 	}
 
 	public String getTitle() {
@@ -84,6 +92,14 @@ public class QuestionNode extends Post {
 
 	public void setFavoriteCount(int favoriteCount) {
 		this.favoriteCount = favoriteCount;
+	}
+	
+	public List<CommentNode> getComments() {
+		return comments;
+	}
+	
+	public void setComments(List<CommentNode> comments) {
+		this.comments = comments;
 	}
 
 	public List<AnswerNode> getAnswers() {
