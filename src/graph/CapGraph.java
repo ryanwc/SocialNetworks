@@ -18,6 +18,8 @@ import java.util.Stack;
 
 public class CapGraph implements Graph {
 	
+	private static final int DEFAULT_VERTEX = 1;
+	
 	private String name;
 	private Map<Integer,Vertex> vertices;
 	private List<Graph> SCCList;
@@ -42,7 +44,12 @@ public class CapGraph implements Graph {
 	 * @param num is the numerical id of the vertex to add
 	 */
 	@Override 
-	public void addVertex(int num) {
+	public void addVertex(int num, int vertexType) {
+		
+		if (vertexType != 1) {
+			throw new IllegalArgumentException("CapGraph only supports "
+					+ "default vertices");
+		}
 		
 		Vertex vertex = new Vertex(num);
 		vertices.put(num,vertex);
@@ -89,7 +96,7 @@ public class CapGraph implements Graph {
 		List<Vertex> centOutVertsInParent = centVertInParent.getOutEdges();
 		
 		// add the center to the egonet
-		egonet.addVertex(center);
+		egonet.addVertex(center, DEFAULT_VERTEX);
 		
 		// create map here or we'll have an inner loop iterating over all
 		// of center's adjacency list for each of center's out verts
@@ -100,7 +107,7 @@ public class CapGraph implements Graph {
 			
 			centOutVertsInParentSet.add(outVertex);
 			// add the out vertex and the edge between it and center
-			egonet.addVertex(outVertex.getID());
+			egonet.addVertex(outVertex.getID(), DEFAULT_VERTEX);
 			egonet.addEdge(center, outVertex.getID());
 		}
 		
@@ -191,7 +198,7 @@ public class CapGraph implements Graph {
 					// TODO: copy other info (e.g. vertex name)
 					SCC = new CapGraph("SCC with Parent '" + name + "' and " +
 									   "Root " + vertexToVisit);
-					SCC.addVertex(vertexToVisit);
+					SCC.addVertex(vertexToVisit, DEFAULT_VERTEX);
 				}
 
 				singleDFS(graph, vertexToVisit, vertexToVisit, 
@@ -243,7 +250,7 @@ public class CapGraph implements Graph {
 		
 		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
 			// TODO: copy other info (e.g. vertex name)
-			SCC.addVertex(vertexID);
+			SCC.addVertex(vertexID, DEFAULT_VERTEX);
 		}
 		
 		for (Vertex neighbor : vertex.getOutEdges()) {
@@ -257,7 +264,7 @@ public class CapGraph implements Graph {
 				if (!visited.contains(neighborID) &&
 					!SCC.getVertices().keySet().contains(neighborID)) {
 
-					SCC.addVertex(neighborID);
+					SCC.addVertex(neighborID, DEFAULT_VERTEX);
 				}
 				
 				// if we added the neighbor to the SCC, add the edge
@@ -295,7 +302,7 @@ public class CapGraph implements Graph {
 			
 			if (!transposeVertices.keySet().contains(vertexID)) {
 				
-				transposeGraph.addVertex(vertexID);
+				transposeGraph.addVertex(vertexID, DEFAULT_VERTEX);
 			}
 			
 			List<Vertex> oldOutEdges = vertex.getOutEdges();
@@ -308,7 +315,7 @@ public class CapGraph implements Graph {
 				
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
-					transposeGraph.addVertex(oldOutVertID);
+					transposeGraph.addVertex(oldOutVertID, DEFAULT_VERTEX);
 				}
 				
 				transposeGraph.addEdge(oldOutVertID, vertexID);
