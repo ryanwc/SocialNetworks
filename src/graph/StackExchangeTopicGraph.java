@@ -348,9 +348,22 @@ public class StackExchangeTopicGraph implements Graph {
 		uniqueVertexIDCounter++;
 	}
 	
-	public void addEdge(Vertex from, Vertex to) {
+	/** Add an undirected edge to the graph.
+	 * 
+	 * The undirected edge is represented by adding two directed edges.
+	 * 
+	 * @see graph.Graph#addEdge(int, int)
+	 * 
+	 * @param vertexAID is the id of a vertex at the end of the edge
+	 * @param vertexBID is the id of the other vertex at the end of the edge
+	 */
+	public void addEdge(int vertexAID, int vertexBID) {
 		
-		// to implement
+		Vertex vertexA = vertices.get(vertexAID);
+		Vertex vertexB = vertices.get(vertexBID);
+		
+		vertexA.createEdge(vertexB);
+		vertexB.createEdge(vertexA);
 	}
 	
 	/** Add a question with dummy data to the graph.
@@ -359,7 +372,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	private QuestionNode addDummyQuestion(int vertexID) {
 		
-		// does not ensure unique questionID
+		// does not quite ensure unique questionID
 		int postID = -(questions.size()-1);
 		String name = "Default Question";
 		int rawScore = 0;
@@ -393,7 +406,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		QuestionNode parentQuestion = addDummyQuestion(vertexID);
 		
-		// does not ensure unique answerID
+		// does not quite ensure unique answerID
 		int postID = -(answers.size()-1);
 		String name = "Default Answer";
 		int rawScore = 0;
@@ -418,7 +431,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		QuestionNode parentPost = addDummyQuestion(vertexID);
 		
-		// does not ensure unique answerID
+		// does not quite ensure unique answerID
 		int commentID = -(comments.size()-1);
 		String name = "Default Comment";
 		int rawScore = 0;
@@ -466,6 +479,10 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	public void setTopic(String topic) {
 		this.topic = topic;
+	}
+	
+	public Map<Integer,Tag> getTags() {
+		return tags;
 	}
 	
 	public int getUniqueVertexIDCounter() {
