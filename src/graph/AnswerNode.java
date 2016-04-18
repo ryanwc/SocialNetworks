@@ -15,17 +15,17 @@ import java.util.List;
 
 public class AnswerNode extends Post implements Commentable {
 
-	private QuestionNode parentQuestion;
+	private int parentQuestionPostID;
 	private List<CommentNode> comments;
 	
 	public AnswerNode(int vertexID, String name, String communityName, 
 					  int postID, int rawScore, String body,
 					  int authorUserID, int commentCount,
-					  QuestionNode parentQuestion) {
+					  int parentQuestionPostID, int viewCount) {
 		super(vertexID, name, communityName, postID,
-			  rawScore, body, authorUserID, parentQuestion.getViewCount());
+			  rawScore, body, authorUserID, viewCount);
 		
-		this.parentQuestion = parentQuestion;
+		this.parentQuestionPostID = parentQuestionPostID;
 		this.comments = new ArrayList<CommentNode>(commentCount);
 	}
 
@@ -41,12 +41,12 @@ public class AnswerNode extends Post implements Commentable {
 	 * Normal getters and setters
 	 */
 	
-	public QuestionNode getParentQuestion() {
-		return parentQuestion;
+	public int getParentQuestionPostID() {
+		return parentQuestionPostID;
 	}
 
-	public void setParentQuestion(QuestionNode parentQuestion) {
-		this.parentQuestion = parentQuestion;
+	public void setParentQuestion(int parentQuestionPostID) {
+		this.parentQuestionPostID = parentQuestionPostID;
 	}
 	
 	public List<CommentNode> getComments() {
@@ -55,17 +55,5 @@ public class AnswerNode extends Post implements Commentable {
 	
 	public void setComments(List<CommentNode> comments) {
 		this.comments = comments;
-	}
-
-	@Override
-	public int getViewCount() {
-		// returns views of the parent question
-		return parentQuestion.getViewCount();
-	}
-	
-	@Override
-	public void setViewCount(int viewCount) {
-		// sets the views of the parent question
-		parentQuestion.setViewCount(viewCount);
 	}
 }

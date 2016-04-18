@@ -12,45 +12,22 @@ package graph;
 
 public class CommentNode extends Post {
 
-	private int commentID;
-	private Post parentPost; // currently, a QuestionNode or AnswerNode
+	private int parentPostID; // currently, a QuestionNode or AnswerNode
 	
 	public CommentNode(int vertexID, String name, String communityName,
 					   int commentID, int rawScore, String body,
-					   int authorUserID, Post parentPost) {
+					   int authorUserID, int parentPostID, int viewCount) {
 		super(vertexID, name, communityName, commentID, 
-			  rawScore, body, authorUserID, parentPost.getViewCount());
+			  rawScore, body, authorUserID, viewCount);
 		
-		this.commentID = commentID;
-		this.parentPost = parentPost;
+		this.parentPostID = parentPostID;
 	}
 
-	public int getCommentID() {
-		return commentID;
+	public int getParentPostID() {
+		return parentPostID;
 	}
 
-	public void setCommentID(int commentID) {
-		this.commentID = commentID;
+	public void setParentPostID(int parentPostID) {
+		this.parentPostID = parentPostID;
 	}
-
-	public Post getParentPost() {
-		return parentPost;
-	}
-
-	public void setParentPost(Post parentPost) {
-		this.parentPost = parentPost;
-	}
-	
-	@Override
-	public int getViewCount() {
-		// returns views of the parent post
-		return parentPost.getViewCount();
-	}
-	
-	@Override
-	public void setViewCount(int viewCount) {
-		// sets the views of the parent post
-		parentPost.setViewCount(viewCount);
-	}
-	
 }
