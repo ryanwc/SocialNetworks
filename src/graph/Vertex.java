@@ -24,7 +24,7 @@ public class Vertex {
 	private int vertexID; // unique ID for this community graph
 	private String name;
 	
-	private List<Vertex> outEdges;
+	private List<Integer> outEdges;
 	
 	public Vertex(int vertexID) {
 		
@@ -36,7 +36,7 @@ public class Vertex {
 		this.vertexID = vertexID;
 		this.name = name;
 		
-		this.outEdges = new ArrayList<Vertex>();
+		this.outEdges = new ArrayList<Integer>();
 	}
 	
 	/** Create an edge between this vertex and another vertex.
@@ -45,7 +45,7 @@ public class Vertex {
 	 */
 	public void createEdge(Vertex toVertex) {
 		
-		outEdges.add(toVertex);
+		outEdges.add(toVertex.getVertexID());
 	}
 	
 	public int getVertexID() {
@@ -58,9 +58,14 @@ public class Vertex {
 		return name;
 	}
 	
-	public List<Vertex> getOutEdges() {
+	public List<Integer> getOutEdges() {
 		
 		return outEdges;
+	}
+	
+	public void setOutEdges(List<Integer> outEdges) {
+		
+		this.outEdges = outEdges;
 	}
 	
 	public void setName(String name) {

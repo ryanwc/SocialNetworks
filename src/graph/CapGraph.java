@@ -93,38 +93,39 @@ public class CapGraph implements Graph {
 									" within " + name); 
 		
 		Vertex centVertInParent = vertices.get(center);
-		List<Vertex> centOutVertsInParent = centVertInParent.getOutEdges();
+		List<Integer> centOutVertsInParent = centVertInParent.getOutEdges();
 		
 		// add the center to the egonet
 		egonet.addVertex(center, DEFAULT_VERTEX);
 		
 		// create map here or we'll have an inner loop iterating over all
 		// of center's adjacency list for each of center's out verts
-		Set<Vertex> centOutVertsInParentSet = 
-				new HashSet<Vertex>(centOutVertsInParent.size()*2,1);
+		Set<Integer> centOutVertsInParentSet = 
+				new HashSet<Integer>(centOutVertsInParent.size()*2,1);
 		
-		for (Vertex outVertex : centOutVertsInParent) {
+		for (Integer outVertexID : centOutVertsInParent) {
 			
-			centOutVertsInParentSet.add(outVertex);
+			centOutVertsInParentSet.add(outVertexID);
 			// add the out vertex and the edge between it and center
-			egonet.addVertex(outVertex.getVertexID(), DEFAULT_VERTEX);
-			egonet.addEdge(center, outVertex.getVertexID());
+			egonet.addVertex(outVertexID, DEFAULT_VERTEX);
+			egonet.addEdge(center, outVertexID);
 		}
 		
-		for (Vertex outVertex : centOutVertsInParent) {
+		for (Integer outVertexID : centOutVertsInParent) {
 			
-			int outVertexID = outVertex.getVertexID();
 			
-			List<Vertex> outVertOutVertsInParent = outVertex.getOutEdges();
+			Vertex outVertex = vertices.get(outVertexID);
 			
-			for (Vertex outVertOutVert : outVertOutVertsInParent) {
+			List<Integer> outVertOutVertsInParent = outVertex.getOutEdges();
+			
+			for (Integer outVertOutVert : outVertOutVertsInParent) {
 				
 				// add edges between out verts if center is connected to both
 				// need to use parent adjacency set because
 				// we created new verts for the egonet
 				if (centOutVertsInParentSet.contains(outVertOutVert)) {
 					
-					egonet.addEdge(outVertexID, outVertOutVert.getVertexID());
+					egonet.addEdge(outVertexID, outVertOutVert);
 				}
 			}
 		}
@@ -253,9 +254,7 @@ public class CapGraph implements Graph {
 			SCC.addVertex(vertexID, DEFAULT_VERTEX);
 		}
 		
-		for (Vertex neighbor : vertex.getOutEdges()) {
-			
-			int neighborID = neighbor.getVertexID();
+		for (Integer neighborID : vertex.getOutEdges()) {
 			
 			if (secondPass) {
 				// TODO: copy other info (e.g. vertex name, edge weights)
@@ -305,13 +304,11 @@ public class CapGraph implements Graph {
 				transposeGraph.addVertex(vertexID, DEFAULT_VERTEX);
 			}
 			
-			List<Vertex> oldOutEdges = vertex.getOutEdges();
+			List<Integer> oldOutEdges = vertex.getOutEdges();
 			
 			// adjacency matrix representation may be useful
 			// to avoid linear inner loop
-			for (Vertex oldOutVert : oldOutEdges) {
-				
-				int oldOutVertID = oldOutVert.getVertexID();
+			for (Integer oldOutVertID : oldOutEdges) {
 				
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
@@ -350,12 +347,11 @@ public class CapGraph implements Graph {
 			
 			Vertex vertex = vertices.get(vertexID);
 			
-			List<Vertex> outVertices = vertex.getOutEdges();
+			List<Integer> outVertices = vertex.getOutEdges();
 			HashSet<Integer> outVertexIDSet = new HashSet<Integer>(outVertices.size()*2,1);
 			
-			for (Vertex outVertex : outVertices) {
+			for (Integer outVertexID : outVertices) {
 				
-				int outVertexID = outVertex.getVertexID();
 				outVertexIDSet.add(outVertexID);
 			}
 			
@@ -395,9 +391,9 @@ public class CapGraph implements Graph {
 			System.out.print("Vertex ID/Name: " + vertex.getVertexID() + "/" +
 							 vertex.getName() + "; adjacency list: ");
 			
-			for (Vertex toVertex : vertex.getOutEdges()) {
+			for (Integer toVertexID : vertex.getOutEdges()) {
 				
-				System.out.print(toVertex.getVertexID() + ",");
+				System.out.print(toVertexID + ",");
 			}
 			
 			System.out.println();
