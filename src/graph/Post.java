@@ -12,18 +12,18 @@ package graph;
 
 public abstract class Post extends Vertex {
 
-	private String communityName;
+	private String topic;
 	private int postID;
 	private int rawScore;
 	private String body; // (as rendered HTML)
 	private int authorUserID; // nullable in original data set; we exclude null
 	private int viewCount;
 	
-	public Post(int vertexID, String name, String communityName, int postID, 
+	public Post(int vertexID, String name, String topic, int postID, 
 				int rawScore, String body,  int authorUserID, int viewCount) {
 		super(vertexID, name);
 		
-		this.communityName = communityName;
+		this.topic = topic;
 		this.postID = postID;
 		this.rawScore = rawScore;
 		this.body = body;
@@ -83,11 +83,11 @@ public abstract class Post extends Vertex {
 		this.viewCount = viewCount;
 	}
 
-	public String getCommunityName() {
-		return communityName;
+	public String getTopic() {
+		return topic;
 	}
 
-	public void setCommunityName(String communityName) {
-		this.communityName = communityName;
+	public void setTopic(String communityName) {
+		this.topic = communityName;
 	}
 }

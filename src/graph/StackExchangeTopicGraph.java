@@ -829,7 +829,7 @@ public class StackExchangeTopicGraph implements Graph {
 			
 			vertexCopy = new QuestionNode(vertex.getVertexID(),
 					vertex.getName(),
-					((QuestionNode)vertex).getCommunityName(),
+					((QuestionNode)vertex).getTopic(),
 					((QuestionNode)vertex).getPostID(),
 					((QuestionNode)vertex).getRawScore(),
 					((QuestionNode)vertex).getBody(),
@@ -845,7 +845,7 @@ public class StackExchangeTopicGraph implements Graph {
 		else if (vertex instanceof AnswerNode) {
 			
 			vertexCopy = new AnswerNode(vertex.getVertexID(), vertex.getName(),
-					((AnswerNode)vertex).getCommunityName(), 
+					((AnswerNode)vertex).getTopic(), 
 					((AnswerNode)vertex).getPostID(),
 					((AnswerNode)vertex).getRawScore(),
 					((AnswerNode)vertex).getBody(),
@@ -856,7 +856,7 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		else if (vertex instanceof CommentNode) {
 			vertexCopy = new CommentNode(vertex.getVertexID(), vertex.getName(),
-					((CommentNode)vertex).getCommunityName(),
+					((CommentNode)vertex).getTopic(),
 					((CommentNode)vertex).getPostID(),
 					((CommentNode)vertex).getRawScore(),
 					((CommentNode)vertex).getBody(),

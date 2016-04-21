@@ -12,15 +12,15 @@ package graph;
 
 public class Tag {
 
-	private String communityName;
+	private String topic;
 	private int tagID;
 	private String tagName;
 	private int tagCount;
 	
-	public Tag(String communityName, int tagID,
+	public Tag(String topic, int tagID,
 			   String tagName, int tagCount) {
 		
-		this.communityName = communityName;
+		this.topic = topic;
 		this.tagID = tagID;
 		this.tagName = tagName;
 		this.tagCount = tagCount;
@@ -50,12 +50,12 @@ public class Tag {
 		this.tagCount = tagCount;
 	}
 
-	public String getCommunityName() {
-		return communityName;
+	public String getTopic() {
+		return topic;
 	}
 
 	public void setCommunityName(String communityName) {
-		this.communityName = communityName;
+		this.topic = communityName;
 	}
 
 }
