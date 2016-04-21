@@ -797,6 +797,20 @@ public class StackExchangeTopicGraph implements Graph {
 	}
 	
 	//TODO: Put a makeCopy method in each vertex type instead of here
+	/** Makes a copy of a Vertex
+	 * 
+	 * Creates a new Vertex with all object values that are initially
+	 * passed to the Vertex's constructor equal to the same values 
+	 * from the Vertex's current state.
+	 * 
+	 * This means, for example, that the new Vertex will have the same
+	 * vertexID and userID as the given Vertex because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @param vertex
+	 * @return a copy of the given Vertex
+	 */
 	public Vertex makeCopy(Vertex vertex) {
 		
 		Vertex vertexCopy;
@@ -1012,47 +1026,152 @@ public class StackExchangeTopicGraph implements Graph {
 	@Override
 	public Graph getEgonet(int center) {
 		
-		Graph egonet = new CapGraph("Egonet for vertex " + center + 
-									" within " + name); 
+		StackExchangeTopicGraph egonet = 
+				new StackExchangeTopicGraph("Egonet for vertex " + center + 
+						" within " + topic); 
 		
-		Vertex centVertInParent = vertices.get(center);
-		List<Vertex> centOutVertsInParent = centVertInParent.getOutEdges();
+		Vertex cVertParentGraph = vertices.get(center);
 		
-		// add the center to the egonet
-		egonet.addVertex(center, DEFAULT_VERTEX);
-		
-		// create map here or we'll have an inner loop iterating over all
-		// of center's adjacency list for each of center's out verts
-		Set<Vertex> centOutVertsInParentSet = 
-				new HashSet<Vertex>(centOutVertsInParent.size()*2,1);
-		
-		for (Vertex outVertex : centOutVertsInParent) {
-			
-			centOutVertsInParentSet.add(outVertex);
-			// add the out vertex and the edge between it and center
-			egonet.addVertex(outVertex.getVertexID(), DEFAULT_VERTEX);
-			egonet.addEdge(center, outVertex.getVertexID());
+		// question: should egonet be different for a post?
+		// maybe it should include its author but not necessarily
+		// all the other posts the author made?
+		// as written, (egonet of post) == (egonet of post's author)
+		if (!(cVertParentGraph instanceof UserNode)) {
+			cVertParentGraph = vertices.get(((Post)cVertParentGraph).
+					getAuthorUserID());
 		}
 		
-		for (Vertex outVertex : centOutVertsInParent) {
+		// add the center to the egonet
+		Vertex cVertParentGraphCopy = makeCopy(cVertParentGraph);
+		egonet.getVertices().put(cVertParentGraphCopy.getVertexID(),
+				cVertParentGraphCopy);
+		egonet.putVertexInCorrectMap(cVertParentGraphCopy);
+		
+		// populate egonet with vertices and edges up to
+		// (and including) one user away from center
+		egonet.DFSEgoNet(this, egonet, cVertParentGraph.getVertexID(), null);
+		
+		Set<Integer> vertIDsFoundByOtherUsers = new HashSet<Integer>();
+		
+		// add vertices and edges directly linking other users
+		for (int otherUserVertexID : egonet.getUsers().keySet()) {
 			
-			int outVertexID = outVertex.getVertexID();
-			
-			List<Vertex> outVertOutVertsInParent = outVertex.getOutEdges();
-			
-			for (Vertex outVertOutVert : outVertOutVertsInParent) {
-				
-				// add edges between out verts if center is connected to both
-				// need to use parent adjacency set because
-				// we created new verts for the egonet
-				if (centOutVertsInParentSet.contains(outVertOutVert)) {
-					
-					egonet.addEdge(outVertexID, outVertOutVert.getVertexID());
-				}
-			}
+			egonet.DFSEgoNet(this, egonet, otherUserVertexID,
+							 vertIDsFoundByOtherUsers);
 		}
 
 		return egonet;
+	}
+	
+	/** Do DFS from a vertex to populate an egonet.
+	 * 
+	 * Works by finding all vertices and edges 1 degree of user
+	 * separation away from all users one degree of user separation away
+	 * from the center user, then adds all vertices and edges found by at
+	 * least two user vertices during this exploration.
+	 * 
+	 * Pass a null value for the argument foundByOtherUser to indicate this
+	 * call starts at the center of the egonet.
+	 * 
+	 * @param parent the StackExchangeTopicGraph that contains the egonet
+	 * @param egonet the StackExchangeTopicGraph that represents the egonet
+	 * @param vertexID the vertex from which to do DFS
+	 * @param foundByOtherUser is the set of vertex IDs found by a call to
+	 * DFSEgoNet starting at a user that is not the center of the ego net.
+	 * Should be null if this call starts at the center of the egonet.
+	 */
+	public void DFSEgoNet(StackExchangeTopicGraph parent, 
+						  StackExchangeTopicGraph egonet,
+						  int vertexID, Set<Integer> foundByOtherUser) {
+		
+		Vertex vertex = parent.getVertices().get(vertexID);
+		List<Integer> outVertexIDs = vertex.getOutEdges();
+		
+		for (Integer outVertexID : outVertexIDs) {
+			
+			Vertex outVertex = parent.getVertices().get(outVertexID);
+			Vertex outVertexCopy = makeCopy(outVertex);;
+			
+			// if we started from center, it's OK to immediately add
+			// the edges
+			// candidate for redesign: separate method for discovering
+			// vertices and adding edges. could be cleaner
+			if (foundByOtherUser == null) {
+				
+				egonet.addEdge(vertexID, outVertexCopy.getVertexID());
+				egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
+			}
+
+			// if this vertex is not already in the egonet
+			if (!egonet.getVertices().containsKey(outVertexCopy.getVertexID())) {
+					
+				// if we started from the center
+				if (foundByOtherUser == null) {
+				
+					egonet.getVertices().put(outVertexCopy.getVertexID(),
+						outVertexCopy);
+					egonet.putVertexInCorrectMap(outVertexCopy);
+				}
+				else {
+					// if we did not start from center, and if this 
+					// vertex is not a user, we might want to add it 
+					// to the egonet
+					if (!(outVertexCopy instanceof UserNode)) {
+						
+						// if it was NOT already found by another user
+						// mark it as found
+						if (!foundByOtherUser.contains(outVertexCopy.getVertexID())) {
+							
+							foundByOtherUser.add(outVertexCopy.getVertexID());
+						}
+						else {
+							// if it WAS already found by another user, that
+							// means there is a direct link between it and another 
+							// user directly connected to center user, so add it
+							// and its edges to the ego net
+							egonet.getVertices().put(outVertexCopy.getVertexID(),
+									outVertexCopy);
+							egonet.putVertexInCorrectMap(outVertexCopy);
+							egonet.addEdge(vertexID, outVertexCopy.getVertexID());
+							egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
+							
+							// still need to connect other users to their immediate
+						}
+					}
+				}
+				
+				// do another DFS is not a user
+				if (!(outVertex instanceof UserNode)) {
+					
+					DFSEgoNet(parent, egonet, outVertexID, foundByOtherUser);	
+				}	
+			}
+			else if (outVertexCopy instanceof UserNode &&
+					 foundByOtherUser != null &&
+					 egonet.getVertices().containsKey(vertexID)) {
+				
+				// at this point everything is in the egonet except for edges 
+				// between not-center users and their egonet posts.
+				// this is one of those users' posts. so, add the edges
+				egonet.addEdge(vertexID, outVertex.getVertexID());
+				egonet.addEdge(outVertex.getVertexID(), vertexID);
+			}
+		}
+	}
+	
+	/** Detect communities in the graph.
+	 * 
+	 */
+	public void detectCommunities() {
+	/*
+		- Compute “betweenness” of all edges (i.e., calculate shortest path between every pair of vertices and count how many times each edge appears in a path)
+			- for each node v (O(v)) (linear at this point)
+			- bfs of graph starting at v (O(|V|+|E|)) (quadratic at this point)
+			- compute # of shortest paths from v to each other node
+			- distribute flow to edges along these paths (increment counter for each edge in each shortest path?)
+		- Remove edge(s) of highest betweenness
+		- Repeat with graph subsections until there are no more edges, or until have separated graph into desired number of components (O(|E|)) (cubic at this point)
+	*/
 	}
 	
 	public String getTopic() {
@@ -1091,5 +1210,63 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	public void setUniqueVertexIDCounter(int uniqueVertexIDCounter) {
 		this.uniqueVertexIDCounter = uniqueVertexIDCounter;
+	}
+	
+	/** Return a version of the map that is more friendly to other systems.
+	 * 
+	 * Returns a HashMap of all vertexIDs v in the graph --> set of vertexIDs 
+	 * s reachable from v via a directed edge.
+	 * 
+	 * The returned representation ignores edge weights and multi-edges.
+	 * 
+	 * @see graph.Graph#exportGraph()
+	 */
+	@Override
+	public HashMap<Integer, HashSet<Integer>> exportGraph() {
+		
+		HashMap<Integer,HashSet<Integer>> exportedGraph = 
+				new HashMap<Integer,HashSet<Integer>>(vertices.size()*2,1);
+		
+		for (int vertexID : vertices.keySet()) {
+			
+			Vertex vertex = vertices.get(vertexID);
+			
+			List<Integer> outVertices = vertex.getOutEdges();
+			HashSet<Integer> outVertexIDSet = new HashSet<Integer>(outVertices.size()*2,1);
+			
+			for (Integer outVertexID : outVertices) {
+				
+				outVertexIDSet.add(outVertexID);
+			}
+			
+			exportedGraph.put(vertexID, outVertexIDSet);
+		}
+		
+		return exportedGraph;
+	}
+
+	//TODO: Make viz of graph with maybe Swing?
+	/** Print a text representation of the graph to default output.
+	 * 
+	 */
+	public void printGraph() {
+		
+		System.out.println("This is a text representation of the graph " + 
+				   topic + ":");
+
+		for (int vertexID : vertices.keySet()) {
+	
+			Vertex vertex = vertices.get(vertexID);
+	
+			System.out.print("Vertex ID/Name: " + vertex.getVertexID() + "/" +
+					 vertex.getName() + "; adjacency list: ");
+	
+			for (Integer toVertexID : vertex.getOutEdges()) {
+		
+				System.out.print(toVertexID + ",");
+			}
+	
+			System.out.println();
+		}
 	}
 }
