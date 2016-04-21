@@ -424,6 +424,43 @@ public class StackExchangeTopicGraph implements Graph {
 		uniqueVertexIDCounter++;
 	}
 	
+	/** Create a Tag object with data from a DOM Node.
+	 * 
+	 * This method relies on the given node being an XML DOM representation
+	 * of a StackExchange tag per the schema described at:
+	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
+	 * 
+	 * @param node contains the tag's data
+	 */
+	public Tag createTagFromDOMNode(Node node) {
+		
+		NamedNodeMap nodeAttributes = node.getAttributes();
+		
+		if (nodeAttributes.getNamedItem("TagName") == null) {
+			throw new IllegalArgumentException("Given node does not "
+					+ "represent a tag");
+		}
+		
+		int tagID = Integer.parseInt(nodeAttributes.
+				getNamedItem("Id").getNodeValue());
+		String tagName = nodeAttributes.getNamedItem("TagName").getNodeValue();
+		int tagCount = Integer.parseInt(nodeAttributes.
+				getNamedItem("Count").getNodeValue());
+		
+		Tag tag = new Tag(topic, tagID, tagName, tagCount);
+		
+		return tag;
+	}
+	
+	/** Add a Tag object to the graph metadata.
+	 * 
+	 * @param the Tag object to add to the graph
+	 */
+	public void addTagToGraph(Tag tag) {
+		
+		tags.put(tag.getTagID(), tag);
+	}
+	
 	/** Add a directed edge to the graph.
 	 * 
 	 * NOTE: An undirected edge is represented by two directed edges.
@@ -1184,6 +1221,10 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	public Map<Integer,Tag> getTags() {
 		return tags;
+	}
+	
+	public void setTags(Map<Integer,Tag> tags) {
+		this.tags = tags;
 	}
 	
 	public Map<Integer,Vertex> getVertices() {
