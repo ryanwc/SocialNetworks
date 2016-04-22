@@ -65,8 +65,8 @@ public class GraphLoader {
      * @param directoryWithXMLFiles the directory with all of a Stack Exchange
      * topic's data in the form of XML files found at the data dump.
      */
-	public void populateStackExchangeTopicGraph(StackExchangeTopicGraph graph, 
-												String directoryWithXMLFiles) {
+	public static void populateStackExchangeTopicGraph(StackExchangeTopicGraph graph, 
+												       String directoryWithXMLFiles) {
 		
 		// get instance of the factory that can give us a document builder
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -79,15 +79,25 @@ public class GraphLoader {
 			e1.printStackTrace();
 		}
 		
-		// load relevant data into the graph
-		loadUserDataIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Users.xml");
-		loadPostDataIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Posts.xml");
-		loadCommentDataIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Comments.xml");
-		loadTagDataIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Tags.xml");
+		// add relevant vertices to the graph
+		// order is important here because a an answer/comment must already have a parent
+		// and any vertex must already have a user
+		// to use same method for questions and answers (they are both in Posts.xml)
+		// could instead sort Posts.xml data ascending by post type
+		loadUsersIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Users.xml");
+		loadQuestionsIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Posts.xml");
+		loadAnswersIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Posts.xml");
+		loadCommentsIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Comments.xml");
+		
+		// add all the edges to the graph
+		graph.addAllEdges();
+		
+		// add relevant metadata to the graph
+		loadTagsIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Tags.xml");
 	}
 	
-	public NodeList getNodeListFromXMLFile(DocumentBuilder dBuilder,
-										   String xmlFilePath) {
+	public static NodeList getNodeListFromXMLFile(DocumentBuilder dBuilder,
+										          String xmlFilePath) {
 		
 		// create a Java file from the XML file
 		File xmlFile = new File(xmlFilePath);
@@ -110,9 +120,9 @@ public class GraphLoader {
 		return DOMNodeList;
 	}
 	
-	public void loadUserDataIntoGraph(StackExchangeTopicGraph graph,
-									  DocumentBuilder dBuilder,
-									  String userXMLFilePath) {
+	private static void loadUsersIntoGraph(StackExchangeTopicGraph graph,
+								          DocumentBuilder dBuilder,
+								          String userXMLFilePath) {
 		
 		NodeList users = getNodeListFromXMLFile(dBuilder, userXMLFilePath);
 		
@@ -122,15 +132,17 @@ public class GraphLoader {
 			
 			// if node is type 1 it is a user, so add it to the graph
 			if (user.getNodeType() == 1) {
-				// add user
+
+				graph.addVertex(graph.getUniqueVertexIDCounter(), 
+								user, StackExchangeTopicGraph.USER);
 			}
 		}
 		
 	}
 	
-	public void loadPostDataIntoGraph(StackExchangeTopicGraph graph, 
-			  						  DocumentBuilder dBuilder,
-			  						  String postsXMLFilePath) {
+	private static void loadQuestionsIntoGraph(StackExchangeTopicGraph graph, 
+			  					         	  DocumentBuilder dBuilder,
+			  					         	  String postsXMLFilePath) {
 		
 		NodeList posts = getNodeListFromXMLFile(dBuilder, postsXMLFilePath);
 		
@@ -144,21 +156,44 @@ public class GraphLoader {
 				String postType = post.getAttributes().getNamedItem("PostTypeId").getNodeValue();
 			
 				// if the post is type 1 it is a question
-				// if the post is type 2 it is an answer
-				// these are the only elements in Posts.xml we care about
 				if (Integer.parseInt(postType) == 1) {
-					// add question
-				}
-				else if (Integer.parseInt(postType) == 2) {
-					// add answer
+					
+					graph.addVertex(graph.getUniqueVertexIDCounter(), 
+									post, StackExchangeTopicGraph.QUESTION);
 				}
 			}
 		}
 	}
 	
-	public void loadCommentDataIntoGraph(StackExchangeTopicGraph graph, 
-			  							 DocumentBuilder dBuilder,
-			  							 String commentsXMLFilePath) {
+
+	private static void loadAnswersIntoGraph(StackExchangeTopicGraph graph, 
+											DocumentBuilder dBuilder,
+											String postsXMLFilePath) {
+
+		NodeList posts = getNodeListFromXMLFile(dBuilder, postsXMLFilePath);
+
+		for (int i = 0; i < posts.getLength(); i++) {
+
+			Node post = posts.item(i);
+
+			// if node is type 1 it is a post, so add it to the graph
+			if (post.getNodeType() == 1) {
+
+				String postType = post.getAttributes().getNamedItem("PostTypeId").getNodeValue();
+
+				// if the post is type 2 it is an answer
+				if (Integer.parseInt(postType) == 2) {
+
+					graph.addVertex(graph.getUniqueVertexIDCounter(), 
+									post, StackExchangeTopicGraph.ANSWER);
+				}
+			}
+		}
+	}
+	
+	private static void loadCommentsIntoGraph(StackExchangeTopicGraph graph, 
+											 DocumentBuilder dBuilder,
+											 String commentsXMLFilePath) {
 		
 		NodeList comments = getNodeListFromXMLFile(dBuilder, commentsXMLFilePath);
 		
@@ -168,14 +203,16 @@ public class GraphLoader {
 			
 			// if node is type 1 it is a comment, so add it to the graph
 			if (comment.getNodeType() == 1) {
-				// add comment
+				
+				graph.addVertex(graph.getUniqueVertexIDCounter(), 
+								comment, StackExchangeTopicGraph.COMMENT);
 			}
 		}
 	}
 	
-	public void loadTagDataIntoGraph(StackExchangeTopicGraph graph, 
-			  						 DocumentBuilder dBuilder,
-			  						 String tagsXMLFilePath) {
+	private static void loadTagsIntoGraph(StackExchangeTopicGraph graph, 
+										 DocumentBuilder dBuilder,
+										 String tagsXMLFilePath) {
 		
 		NodeList tags = getNodeListFromXMLFile(dBuilder, tagsXMLFilePath);
 		
@@ -185,7 +222,8 @@ public class GraphLoader {
 			
 			// if node is type 1 it is a tag, so add it to the graph
 			if (tag.getNodeType() == 1) {
-				// add tag
+				
+				graph.addTagToGraph(graph.createTagFromDOMNode(tag));
 			}
 		}
 	}
