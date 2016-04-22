@@ -23,24 +23,66 @@ public class QuestionNode extends Post implements Commentable {
 	// would it be better to have these lists of Integers (IDs)?
 	private List<AnswerNode> answers;
 	private List<CommentNode> comments;
-	private List<Tag> tags;
 	
-	public QuestionNode(int vertexID, String name, String communityName,
+	private List<Integer> tagIDs;
+	
+	public QuestionNode(int vertexID, String name, String topic,
 						int postID, int rawScore, String body,
 						int authorUserID, int commentCount, int viewCount,
 						Integer acceptedAnswerID, String title, 
-						List<Tag> tags, int answerCount, 
+						List<Integer> tagIDs, int answerCount, 
 						int favoriteCount) {
-		super(vertexID, name, communityName, postID, rawScore,
+		super(vertexID, name, topic, postID, rawScore,
 			  body, authorUserID, viewCount);
 
 		this.acceptedAnswerID = acceptedAnswerID;
 		this.title = title;
-		this.tags = tags;
+		this.tagIDs = tagIDs;
 		this.favoriteCount = favoriteCount;
 		
 		this.answers = new ArrayList<AnswerNode>(answerCount);
 		this.comments = new ArrayList<CommentNode>(commentCount);
+	}
+	
+	/** Makes a copy of this QuestionNode
+	 * 
+	 * Creates a new QuestionNode with all object values that are initially
+	 * passed to the QuestionNode's constructor equal to the same values 
+	 * from the QuestionNode's current state.
+	 * 
+	 * This means, for example, that the new Vertex will have the same
+	 * vertexID as this QuestionNode because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @return a new QuestionNode with values described above
+	 */
+	@Override
+	public QuestionNode makeCopy() {
+		
+		List<Integer> copyTagIDs = new ArrayList<Integer>(tagIDs.size());
+		
+		for (int tagID : tagIDs) {
+			
+			copyTagIDs.add(tagID);
+		}
+		
+		Integer copyAcceptedAnswerID;
+		
+		if (acceptedAnswerID == null) {
+			copyAcceptedAnswerID = null;
+		}
+		else {
+			copyAcceptedAnswerID = new Integer(acceptedAnswerID);
+		}
+		
+		return new QuestionNode(this.getVertexID(), this.getName(), 
+								this.getTopic(), this.getPostID(), 
+								this.getRawScore(), this.getBody(),
+								this.getAuthorUserID(), comments.size(), 
+								this.getViewCount(), copyAcceptedAnswerID,
+								title, copyTagIDs, answers.size(),
+								favoriteCount);
 	}
 	
 	/*
@@ -79,12 +121,12 @@ public class QuestionNode extends Post implements Commentable {
 		this.title = title;
 	}
 
-	public List<Tag> getTags() {
-		return tags;
+	public List<Integer> getTags() {
+		return tagIDs;
 	}
 
-	public void setTags(List<Tag> tags) {
-		this.tags = tags;
+	public void setTags(List<Integer> tagIDs) {
+		this.tagIDs = tagIDs;
 	}
 
 	public int getFavoriteCount() {
@@ -145,8 +187,8 @@ public class QuestionNode extends Post implements Commentable {
 		returnString += "Comments Per Views: " + commentsPerViews;
 		returnString += "\n";	
 		returnString += "Tag IDs: ";
-		for (Tag tag : tags) {
-			returnString += tag.getTagID() + ", ";
+		for (int tagID : tagIDs) {
+			returnString += tagID + ", ";
 		}
 		returnString += "\n";
 		

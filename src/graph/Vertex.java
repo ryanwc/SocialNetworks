@@ -48,6 +48,24 @@ public class Vertex {
 		outEdges.add(toVertex.getVertexID());
 	}
 	
+	/** Makes a copy of this Vertex
+	 * 
+	 * Creates a new Vertex with all object values that are initially
+	 * passed to the Vertex's constructor equal to the same values 
+	 * from the Vertex's current state.
+	 * 
+	 * This means, for example, that the new Vertex will have the same
+	 * vertexID as this Vertex because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @return a copy of the given Vertex
+	 */
+	public Vertex makeCopy() {
+		
+		return new Vertex(vertexID, name);
+	}
+	
 	public int getVertexID() {
 		
 		return vertexID;

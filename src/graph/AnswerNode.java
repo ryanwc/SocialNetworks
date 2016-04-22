@@ -19,15 +19,38 @@ public class AnswerNode extends Post implements Commentable {
 	private int parentQuestionPostID;
 	private List<CommentNode> comments;
 	
-	public AnswerNode(int vertexID, String name, String communityName, 
+	public AnswerNode(int vertexID, String name, String topic, 
 					  int postID, int rawScore, String body,
 					  int authorUserID, int commentCount,
 					  int parentQuestionPostID, int viewCount) {
-		super(vertexID, name, communityName, postID,
+		super(vertexID, name, topic, postID,
 			  rawScore, body, authorUserID, viewCount);
 		
 		this.parentQuestionPostID = parentQuestionPostID;
 		this.comments = new ArrayList<CommentNode>(commentCount);
+	}
+	
+	/** Makes a copy of this AnswerNode
+	 * 
+	 * Creates a new AnswerNode with all object values that are initially
+	 * passed to the AnswerNode's constructor equal to the same values 
+	 * from the AnswerNode's current state.
+	 * 
+	 * This means, for example, that the new Vertex will have the same
+	 * vertexID as this AnswerNode because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @return a new AnswerNode with values described above
+	 */
+	@Override
+	public AnswerNode makeCopy() {
+		
+		return new AnswerNode(this.getVertexID(), this.getName(),
+							this.getTopic(), this.getPostID(),
+							this.getRawScore(), this.getBody(),
+							this.getAuthorUserID(), comments.size(),
+							parentQuestionPostID, this.getViewCount());
 	}
 
 	/*

@@ -10,7 +10,6 @@
 
 package graph;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +42,26 @@ public class UserNode extends Vertex {
 		this.questions = new ArrayList<QuestionNode>();
 		this.answers = new ArrayList<AnswerNode>();
 		this.comments = new ArrayList<CommentNode>();
+	}
+	
+	/** Makes a copy of this UserNode
+	 * 
+	 * Creates a new UserNode with all object values that are initially
+	 * passed to the UserNode's constructor equal to the same values 
+	 * from the UserNode's current state.
+	 * 
+	 * This means, for example, that the new Vertex will have the same
+	 * vertexID as this UserNode because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @return a new UserNode with values described above
+	 */
+	@Override
+	public UserNode makeCopy() {
+		
+		return new UserNode(this.getVertexID(), this.getName(), userID,
+							reputation, age, upvotes, downvotes, accountID);
 	}
 
 	public int getUserID() {

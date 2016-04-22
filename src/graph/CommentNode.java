@@ -14,13 +14,36 @@ public class CommentNode extends Post {
 
 	private int parentPostID; // currently, a QuestionNode or AnswerNode
 	
-	public CommentNode(int vertexID, String name, String communityName,
+	public CommentNode(int vertexID, String name, String topic,
 					   int commentID, int rawScore, String body,
 					   int authorUserID, int parentPostID, int viewCount) {
-		super(vertexID, name, communityName, commentID, 
+		super(vertexID, name, topic, commentID, 
 			  rawScore, body, authorUserID, viewCount);
 		
 		this.parentPostID = parentPostID;
+	}
+	
+	/** Makes a copy of this CommentNode
+	 * 
+	 * Creates a new CommentNode with all object values that are initially
+	 * passed to the CommentNode's constructor equal to the same values 
+	 * from the CommentNode's current state.
+	 * 
+	 * This means, for example, that the new CommentNode will have the same
+	 * vertexID as this CommentNode because those values are 
+	 * passed to the constructor, but not the same list of out edges 
+	 * because the list of outEdges is not passed to the constructor.
+	 * 
+	 * @return a new CommentNode with the values described above
+	 */
+	@Override
+	public CommentNode makeCopy() {
+		
+		return new CommentNode(this.getVertexID(), this.getName(),
+							   this.getTopic(), this.getPostID(),
+							   this.getRawScore(), this.getBody(),
+							   this.getAuthorUserID(), parentPostID,
+							   this.getViewCount());
 	}
 
 	public int getParentPostID() {

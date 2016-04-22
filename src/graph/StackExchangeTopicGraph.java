@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -226,7 +224,9 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		
 		List<String> tagStrings = parseRawTags(tagsString);
-		List<Tag> thisQuestionTagList = new ArrayList<Tag>(tagStringMap.size());
+		List<Integer> thisQuestionTagIDList = 
+				new ArrayList<Integer>(tagStringMap.size());
+		
 		for (String tagString : tagStrings) {
 			
 			if (!tagStringMap.containsKey(tagString)) {
@@ -235,7 +235,7 @@ public class StackExchangeTopicGraph implements Graph {
 								+ " in the topic.");
 			}
 			
-			thisQuestionTagList.add(tagStringMap.get(tagString));
+			thisQuestionTagIDList.add(tagStringMap.get(tagString).getTagID());
 		}
 		
 		// name is possibly not needed
@@ -243,7 +243,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		QuestionNode question = new QuestionNode(vertexID, name, topic, postID,
 				rawScore, body, authorUserID, commentCount, viewCount, 
-				acceptedAnswerID, title, thisQuestionTagList, 
+				acceptedAnswerID, title, thisQuestionTagIDList, 
 				answerCount, favoriteCount);
 		
 		return question;
@@ -542,6 +542,7 @@ public class StackExchangeTopicGraph implements Graph {
 			}
 		}
 		// no extra work to do if fromVertex is a CommentNode
+		// 
 	}
 	
 	/** Adds all edges to the graph.
@@ -638,13 +639,13 @@ public class StackExchangeTopicGraph implements Graph {
 		int viewCount = 0;
 		Integer acceptedAnswerID = null;
 		String title = "";
-		List<Tag> tags = new ArrayList<Tag>(0);
+		List<Integer> tagIDs = new ArrayList<Integer>(0);
 		int answerCount = 0;
 		int favoriteCount = 0;
 		
 		QuestionNode question = new QuestionNode(vertexID, name, topic,
 				postID, rawScore, body, authorID, commentCount, viewCount, 
-				acceptedAnswerID, title, tags, answerCount, favoriteCount);
+				acceptedAnswerID, title, tagIDs, answerCount, favoriteCount);
 		
 		vertices.put(question.getVertexID(), question);
 		questions.put(question.getPostID(), question);
@@ -750,7 +751,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	@Override
 	public List<Graph> getSCCs() {
-
+		//TODO: add tags to each SCC
 		Stack<Integer> vertexIDStack = new Stack<Integer>();
 		
 		for (int vertexID : vertices.keySet()) {
@@ -840,7 +841,7 @@ public class StackExchangeTopicGraph implements Graph {
 								StackExchangeTopicGraph SCC) {
 		
 		Vertex vertexSuper = graph.vertices.get(vertexToAddID);
-		Vertex vertexSCC = makeCopy(vertexSuper);
+		Vertex vertexSCC = vertexSuper.makeCopy();
 		SCC.putVertexInCorrectMap(vertexSCC);
 		SCC.vertices.put(vertexSCC.getVertexID(), vertexSCC);
 	}
@@ -988,7 +989,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
 
-			Vertex vertexCopy = makeCopy(vertex);
+			Vertex vertexCopy = vertex.makeCopy();
 			SCC.putVertexInCorrectMap(vertexCopy);
 			SCC.vertices.put(vertexCopy.getVertexID(),vertexCopy);
 		}
@@ -1003,14 +1004,9 @@ public class StackExchangeTopicGraph implements Graph {
 				if (!visited.contains(neighborID) &&
 					!SCC.getVertices().keySet().contains(neighborID)) {
 
-					Vertex neighborCopy = makeCopy(neighbor);
+					Vertex neighborCopy = neighbor.makeCopy();
 					SCC.putVertexInCorrectMap(neighborCopy);
 					SCC.vertices.put(neighborCopy.getVertexID(),neighborCopy);
-				}
-				
-				// if we added the neighbor to the SCC, add the edge
-				if (SCC.getVertices().keySet().contains(neighborID)) {
-					SCC.addEdge(vertexID, neighborID);
 				}
 			}
 			
@@ -1046,7 +1042,7 @@ public class StackExchangeTopicGraph implements Graph {
 			
 			if (!transposeVertices.keySet().contains(vertexID)) {
 				
-				Vertex vertexCopy = makeCopy(vertex);
+				Vertex vertexCopy = vertex.makeCopy();
 				transposeGraph.putVertexInCorrectMap(vertexCopy);
 				transposeGraph.vertices.put(vertexCopy.getVertexID(),
 						vertexCopy);
@@ -1062,7 +1058,7 @@ public class StackExchangeTopicGraph implements Graph {
 				
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
-					Vertex oldOutVertCopy = makeCopy(oldOutVert);
+					Vertex oldOutVertCopy = oldOutVert.makeCopy();
 					transposeGraph.putVertexInCorrectMap(oldOutVertCopy);
 					transposeGraph.vertices.put(oldOutVertCopy.getVertexID(),
 							oldOutVertCopy);
@@ -1096,6 +1092,9 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * The returned graph does not share any objects with the original graph.
 	 * 
+	 * NOTE: Each vertex in the egonet will have the same stats (views, 
+	 * usefulness, etc) as in the parent graph.
+	 * 
 	 * @param center is the vertex at the center of the egonet
 	 * 
 	 * @return the egonet centered at center, including center
@@ -1108,7 +1107,7 @@ public class StackExchangeTopicGraph implements Graph {
 		StackExchangeTopicGraph egonet = 
 				new StackExchangeTopicGraph("Egonet for vertex " + center + 
 						" within " + topic); 
-		
+		//TODO: Add tags to egonet
 		Vertex cVertParentGraph = vertices.get(center);
 		
 		// question: should egonet be different for a post?
@@ -1121,7 +1120,7 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		
 		// add the center to the egonet
-		Vertex cVertParentGraphCopy = makeCopy(cVertParentGraph);
+		Vertex cVertParentGraphCopy = cVertParentGraph.makeCopy();
 		egonet.getVertices().put(cVertParentGraphCopy.getVertexID(),
 				cVertParentGraphCopy);
 		egonet.putVertexInCorrectMap(cVertParentGraphCopy);
@@ -1169,7 +1168,7 @@ public class StackExchangeTopicGraph implements Graph {
 		for (Integer outVertexID : outVertexIDs) {
 			
 			Vertex outVertex = parent.getVertices().get(outVertexID);
-			Vertex outVertexCopy = makeCopy(outVertex);;
+			Vertex outVertexCopy = outVertex.makeCopy();
 			
 			// if we started from center, it's OK to immediately add
 			// the edges
@@ -1364,5 +1363,7 @@ public class StackExchangeTopicGraph implements Graph {
 			System.out.println(tag.toString());
 			System.out.println("**********");
 		}
+		
+		System.out.println("---------------------");
 	}
 }
