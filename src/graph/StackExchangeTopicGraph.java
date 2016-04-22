@@ -40,7 +40,13 @@ public class StackExchangeTopicGraph implements Graph {
 	private Map<Integer,CommentNode> comments;
 	private Map<Integer,UserNode> users;
 	
-	private Map<Integer,Tag> tags;
+	// is there a better way to do this?  need the String map for fast access
+	// when creating QuestionNodes but ID map is less fragile.
+	// if we concede a Tag object cannot exist without a Question that has it
+	// as a tag, we could create Tags upon Question creation instead of
+	// separately.  But StackExchange allows Tags with 0 related questions.
+	private Map<Integer,Tag> tagIDMap;
+	private Map<String,Tag> tagStringMap;
 	
 	// to enforce unique vertex IDs
 	// ensuring unique IDs like this seems fragile
@@ -64,7 +70,8 @@ public class StackExchangeTopicGraph implements Graph {
 		this.answers = new HashMap<Integer,AnswerNode>();
 		this.comments = new HashMap<Integer,CommentNode>();
 		
-		this.tags = new HashMap<Integer,Tag>();
+		this.tagIDMap = new HashMap<Integer,Tag>();
+		this.tagStringMap = new HashMap<String,Tag>();
 		
 		// might be inefficient because list will keep doubling
 		this.SCCList = new ArrayList<Graph>();
@@ -218,14 +225,26 @@ public class StackExchangeTopicGraph implements Graph {
 					+ "vertex with vertexID " + vertexID);
 		}
 		
-		List<String> tags = parseRawTags(tagsString);
+		List<String> tagStrings = parseRawTags(tagsString);
+		List<Tag> thisQuestionTagList = new ArrayList<Tag>(tagStringMap.size());
+		for (String tagString : tagStrings) {
+			
+			if (!tagStringMap.containsKey(tagString)) {
+				throw new IllegalArgumentException("Tag " + tagString + " in "
+						+ "Question with postID " + postID + " does not exist"
+								+ " in the topic.");
+			}
+			
+			thisQuestionTagList.add(tagStringMap.get(tagString));
+		}
 		
 		// name is possibly not needed
-		String name = "Question " + questions.size();
+		String name = "Question " + (questions.size()+1);
 		
 		QuestionNode question = new QuestionNode(vertexID, name, topic, postID,
 				rawScore, body, authorUserID, commentCount, viewCount, 
-				acceptedAnswerID, title, tags, answerCount, favoriteCount);
+				acceptedAnswerID, title, thisQuestionTagList, 
+				answerCount, favoriteCount);
 		
 		return question;
 	}
@@ -280,8 +299,9 @@ public class StackExchangeTopicGraph implements Graph {
 		// not absolutely necessary but a nice way to ensure
 		// the answer has a parent
 		if (!questions.containsKey(parentQuestionID)) {
-			throw new IllegalArgumentException("Parent question node must "
-					+ "be added to the graph before child answer node.");
+			throw new IllegalArgumentException("Parent question with postID "
+					+ parentQuestionID + " must be added before Answer with "
+					+ " postID " + postID);
 		}
 
 		if (vertices.containsKey(vertexID)) {
@@ -292,7 +312,7 @@ public class StackExchangeTopicGraph implements Graph {
 		QuestionNode parentQuestion = questions.get(parentQuestionID);
 		
 		// name is possibly not needed
-		String name = "Answer " + answers.size();
+		String name = "Answer " + (answers.size()+1);
 		
 		AnswerNode answer = new AnswerNode(vertexID, name, topic, postID,
 				rawScore, body, authorUserID, commentCount, 
@@ -343,9 +363,6 @@ public class StackExchangeTopicGraph implements Graph {
 		int parentPostID = Integer.parseInt(nodeAttributes.
 				getNamedItem("PostId").getNodeValue());
 		
-		System.out.println(vertexID + " is comment " + postID + " with parent " + parentPostID);
-		// not absolutely necessary but a nice way
-		// to ensure the comment has a parent
 		if (!answers.containsKey(parentPostID) &&
 			!questions.containsKey(parentPostID)) {
 			throw new IllegalArgumentException("Parent post node must "
@@ -367,7 +384,7 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		
 		// name is possibly not needed
-		String name = "Comment " + comments.size();
+		String name = "Comment " + (comments.size()+1);
 		
 		CommentNode comment = new CommentNode(vertexID, name, topic, postID,
 				rawScore, body, authorUserID, parentPost.getPostID(), 
@@ -478,7 +495,8 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	public void addTagToGraph(Tag tag) {
 		
-		tags.put(tag.getTagID(), tag);
+		tagIDMap.put(tag.getTagID(), tag);
+		tagStringMap.put(tag.getTagName(), tag);
 	}
 	
 	/** Add a directed edge to the graph.
@@ -493,7 +511,7 @@ public class StackExchangeTopicGraph implements Graph {
 	public void addEdge(int fromVertexID, int toVertexID) {
 		
 		Vertex fromVertex = vertices.get(fromVertexID);
-		Vertex toVertex = vertices.get(fromVertexID);
+		Vertex toVertex = vertices.get(toVertexID);
 		
 		fromVertex.createEdge(toVertex);
 		
@@ -620,7 +638,7 @@ public class StackExchangeTopicGraph implements Graph {
 		int viewCount = 0;
 		Integer acceptedAnswerID = null;
 		String title = "";
-		List<String> tags = new ArrayList<String>(0);
+		List<Tag> tags = new ArrayList<Tag>(0);
 		int answerCount = 0;
 		int favoriteCount = 0;
 		
@@ -689,23 +707,27 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	/** Creates a list of tags from raw tag data in a question DOM node.
 	 * 
+	 * Each tag is between '&lt;' which is an XML '<', and '&gt;' which
+	 * is an XML '>'.  It appears Java (or the Java method that gets text
+	 * from XML DOM) converts '&lt;' to '<' and '&gt;' to '>'.
+	 * 
+	 * This method may break if there is a '<' or '>' in the actual tag name.
+	 * 
 	 * @param tagsString is the raw tags String from the DOM
 	 */
 	public List<String> parseRawTags(String tagsString) {
 		
 		List<String> tags = new ArrayList<String>(4);
 		
-		// each tag is between '&lt;' and '&gt;' get each one and add to list
-		// assumes tagsString either begins with '&lt;' and ends with '&gt;'
-		// or is empty
-		for (int i = 0; i < tagsString.length()-3; i++) {
-			
-			if (tagsString.substring(i,i+4).equals("&lt;")) {
-				int j = i+4;
-				while (!tagsString.substring(j,j+4).equals("&gt;")) {
+		for (int i = 0; i < tagsString.length()-1; i++) {
+
+			if (tagsString.charAt(i) == '<') {
+				int j = i+1;
+				while (tagsString.charAt(j) != '>') {
 					j++;
 				}
-				tags.add(tagsString.substring(i+4,j));
+
+				tags.add(tagsString.substring(i+1,j));
 			}
 		}
 		
@@ -1239,12 +1261,20 @@ public class StackExchangeTopicGraph implements Graph {
 		this.topic = topic;
 	}
 	
-	public Map<Integer,Tag> getTags() {
-		return tags;
+	public Map<Integer,Tag> getTagIDMap() {
+		return tagIDMap;
 	}
 	
-	public void setTags(Map<Integer,Tag> tags) {
-		this.tags = tags;
+	public void setTagIDMap(Map<Integer,Tag> tagIDMap) {
+		this.tagIDMap = tagIDMap;
+	}
+	
+	public Map<String,Tag> getTagStringMap() {
+		return tagStringMap;
+	}
+	
+	public void setTags(Map<String,Tag> tagStringMap) {
+		this.tagStringMap = tagStringMap;
 	}
 	
 	public Map<Integer,Vertex> getVertices() {
@@ -1314,20 +1344,25 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		System.out.println("This is a text representation of the graph " + 
 				   topic + ":");
-
-		for (int vertexID : vertices.keySet()) {
-	
-			Vertex vertex = vertices.get(vertexID);
-	
-			System.out.print("Vertex ID/Name: " + vertex.getVertexID() + "/" +
-					 vertex.getName() + "; adjacency list: ");
-	
-			for (Integer toVertexID : vertex.getOutEdges()) {
 		
-				System.out.print(toVertexID + ",");
-			}
+		System.out.println("---------------------");
+		System.out.println("Vertices:");
+
+		for (Vertex vertex : vertices.values()) {
 	
-			System.out.println();
+			System.out.println("**********");
+			System.out.println(vertex.toString());
+			System.out.println("**********");
+		}
+		
+		System.out.println("---------------------");
+		
+		System.out.println("Tags:");
+		for (Tag tag : tagIDMap.values()) {
+			
+			System.out.println("**********");
+			System.out.println(tag.toString());
+			System.out.println("**********");
 		}
 	}
 }
