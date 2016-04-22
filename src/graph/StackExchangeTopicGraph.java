@@ -23,10 +23,10 @@ import org.w3c.dom.Node;
 
 public class StackExchangeTopicGraph implements Graph {
 	
-	private static final int QUESTION = 1;
-	private static final int ANSWER = 2;
-	private static final int COMMENT = 3;
-	private static final int USER = 4;
+	public static final int QUESTION = 1;
+	public static final int ANSWER = 2;
+	public static final int COMMENT = 3;
+	public static final int USER = 4;
 
 	private String topic;
 	private Map<Integer,Vertex> vertices;
@@ -43,9 +43,10 @@ public class StackExchangeTopicGraph implements Graph {
 	private Map<Integer,Tag> tags;
 	
 	// to enforce unique vertex IDs
-	// e.g., for deleted and added vertices
-	// ensuring unique IDs is kind of fragile (see dummy vertex methods)
-	private int uniqueVertexIDCounter = 0;
+	// ensuring unique IDs like this seems fragile
+	// addVertex methods fail if the ID is already mapped and
+	// increment the counter after putting the vertex in the map
+	private int uniqueVertexIDCounter = 1;
 	
 	public StackExchangeTopicGraph() {
 		
@@ -55,7 +56,16 @@ public class StackExchangeTopicGraph implements Graph {
 	public StackExchangeTopicGraph(String topic) {
 		
 		this.topic = topic;
+		
 		this.vertices = new HashMap<Integer,Vertex>();
+		
+		this.users = new HashMap<Integer,UserNode>();
+		this.questions = new HashMap<Integer,QuestionNode>();
+		this.answers = new HashMap<Integer,AnswerNode>();
+		this.comments = new HashMap<Integer,CommentNode>();
+		
+		this.tags = new HashMap<Integer,Tag>();
+		
 		// might be inefficient because list will keep doubling
 		this.SCCList = new ArrayList<Graph>();
 	}
@@ -146,9 +156,9 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		else {
 			
-			throw new IllegalArgumentException("Nodes in a "
+			throw new IllegalArgumentException("Vertices in a "
 					+ "StackExchangeTopicGraph must be a question, "
-					+ "answer, comment, or user");
+					+ "answer, comment, or user.");
 		}
 	}
 	
@@ -184,9 +194,18 @@ public class StackExchangeTopicGraph implements Graph {
 				getNamedItem("CommentCount").getNodeValue());
 		int viewCount = Integer.parseInt(nodeAttributes.
 				getNamedItem("ViewCount").getNodeValue());
-		// need to check null on acceptedAnserID?
-		Integer acceptedAnswerID = Integer.parseInt(nodeAttributes.
+
+		Integer acceptedAnswerID;
+		if (nodeAttributes.getNamedItem("AcceptedAnswerId") != null) {
+			
+			acceptedAnswerID = Integer.parseInt(nodeAttributes.
 				getNamedItem("AcceptedAnswerId").getNodeValue());
+		}
+		else {
+			
+			acceptedAnswerID = null;
+		}
+		
 		String title = nodeAttributes.getNamedItem("Title").getNodeValue();
 		int answerCount = Integer.parseInt(nodeAttributes.
 				getNamedItem("AnswerCount").getNodeValue());
@@ -324,6 +343,7 @@ public class StackExchangeTopicGraph implements Graph {
 		int parentPostID = Integer.parseInt(nodeAttributes.
 				getNamedItem("PostId").getNodeValue());
 		
+		System.out.println(vertexID + " is comment " + postID + " with parent " + parentPostID);
 		// not absolutely necessary but a nice way
 		// to ensure the comment has a parent
 		if (!answers.containsKey(parentPostID) &&
