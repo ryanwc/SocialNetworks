@@ -21,6 +21,7 @@ public class GraphTest {
 		
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Test Topic 1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
+		graph.printGraph();
 		
 		//testGraph.printGraph();
 		

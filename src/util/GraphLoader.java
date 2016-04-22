@@ -79,6 +79,11 @@ public class GraphLoader {
 			e1.printStackTrace();
 		}
 		
+		// add relevant metadata to the graph
+		// needs to be done first because QuestionNode constructor depends on
+		// referencing correct Tag objects
+		loadTagsIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Tags.xml");
+		
 		// add relevant vertices to the graph
 		// order is important here because a an answer/comment must already have a parent
 		// and any vertex must already have a user
@@ -91,9 +96,6 @@ public class GraphLoader {
 		
 		// add all the edges to the graph
 		graph.addAllEdges();
-		
-		// add relevant metadata to the graph
-		loadTagsIntoGraph(graph, dBuilder, directoryWithXMLFiles + "Tags.xml");
 	}
 	
 	public static NodeList getNodeListFromXMLFile(DocumentBuilder dBuilder,
