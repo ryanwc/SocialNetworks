@@ -5,6 +5,7 @@ import java.util.List;
 
 import graph.CapGraph;
 import graph.Graph;
+import graph.StackExchangeTopicGraph;
 import graph.Vertex;
 import util.GraphLoader;
 
@@ -13,10 +14,13 @@ public class GraphTest {
 	public static void main(String[] args) {
 		
 		//CapGraph testGraphOne = new CapGraph("Test One");
-		CapGraph testGraph = new CapGraph("Testing");
+		//CapGraph testGraph = new CapGraph("Testing");
 		
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
-		GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
+		//GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
+		
+		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Test Topic 1");
+		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
 		
 		//testGraph.printGraph();
 		
@@ -46,7 +50,7 @@ public class GraphTest {
 		}
 		//*/
 		
-		///*
+		/*
 		//SCCs test
 		List<Graph> SCCs = testGraph.getSCCs();
 		for (Graph graph : SCCs) {
