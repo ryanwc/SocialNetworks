@@ -57,5 +57,22 @@ public class Tag {
 	public void setCommunityName(String communityName) {
 		this.topic = communityName;
 	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = "";
+		
+		returnString += "Tag ID: " + tagID;
+		returnString += "\n";
+		returnString += "Tag Name: " + tagName;
+		returnString += "\n";
+		returnString += "Topic: " + topic;
+		returnString += "\n";
+		returnString += "Count: " + tagCount;
+		returnString += "\n";
+		
+		return returnString;
+	}
 
 }

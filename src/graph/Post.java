@@ -10,9 +10,13 @@
 
 package graph;
 
+import java.text.DecimalFormat;
+
 public abstract class Post extends Vertex {
 
 	private String topic;
+	// not perfectly clean because comments should have commentID too
+	// but we're not going to have a separate commentID for now
 	private int postID;
 	private int rawScore;
 	private String body; // (as rendered HTML)
@@ -36,7 +40,7 @@ public abstract class Post extends Vertex {
 	 */
 	
 	public double calculateUsefulness() {
-		return rawScore / viewCount;
+		return ((double)rawScore) / ((double)viewCount);
 	}
 	
 	/*
@@ -89,5 +93,31 @@ public abstract class Post extends Vertex {
 
 	public void setTopic(String communityName) {
 		this.topic = communityName;
+	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = super.toString();
+		
+		DecimalFormat derivedScoreFormat = new DecimalFormat("###,###.###");
+	    String usefulnessScore = derivedScoreFormat.format(calculateUsefulness());
+		
+		returnString += "Topic: " + topic;
+		returnString += "\n";
+		returnString += "Post ID: " + postID;
+		returnString += "\n";
+		returnString += "Raw Score: " + rawScore;
+		returnString += "\n";
+		returnString += "Text Body: " + body;
+		returnString += "\n";
+		returnString += "Author User ID: " + authorUserID;
+		returnString += "\n";
+		returnString += "Views: " + viewCount;
+		returnString += "\n";
+		returnString += "Usefulness: " + usefulnessScore;
+		returnString += "\n";
+		
+		return returnString;
 	}
 }

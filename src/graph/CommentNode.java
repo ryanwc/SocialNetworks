@@ -30,4 +30,20 @@ public class CommentNode extends Post {
 	public void setParentPostID(int parentPostID) {
 		this.parentPostID = parentPostID;
 	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = super.toString();
+		
+	    returnString += "Parent Post Post ID: " + parentPostID;
+		returnString += "\n";
+		// returnString += "Comment ID: " + commentID;
+		// returnString += "\n";
+		returnString += "NOTE: A comment may have the same postID as a "
+				+ "Question or Answer, but the comment's postID is unique "
+				+ "to all comments. [Dev should add commentID]";
+		
+		return returnString;
+	}
 }

@@ -72,4 +72,21 @@ public class Vertex {
 		
 		this.name = name;
 	}
+	
+	public String toString() {
+		
+		String returnString = "";
+		
+		returnString += "Vertex ID: " + vertexID;
+		returnString += "\n";
+		returnString += "Name: " + name;
+		returnString += "\n";
+		returnString += "Out edge vertex IDs: ";
+		for (int outEdgeVertexID : outEdges) {
+			returnString += outEdgeVertexID + ", ";
+		}
+		returnString += "\n";
+		
+		return returnString;
+	}
 }

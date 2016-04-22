@@ -10,6 +10,7 @@
 
 package graph;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,16 +20,16 @@ public class QuestionNode extends Post implements Commentable {
 	private String title;
 	private int favoriteCount;
 	
+	// would it be better to have these lists of Integers (IDs)?
 	private List<AnswerNode> answers;
 	private List<CommentNode> comments;
-	
-	private List<String> tags;
+	private List<Tag> tags;
 	
 	public QuestionNode(int vertexID, String name, String communityName,
 						int postID, int rawScore, String body,
 						int authorUserID, int commentCount, int viewCount,
 						Integer acceptedAnswerID, String title, 
-						List<String> tags, int answerCount, 
+						List<Tag> tags, int answerCount, 
 						int favoriteCount) {
 		super(vertexID, name, communityName, postID, rawScore,
 			  body, authorUserID, viewCount);
@@ -47,15 +48,15 @@ public class QuestionNode extends Post implements Commentable {
 	 */
 
 	public double calculateCommentsPerViews() {
-		return comments.size() / this.getViewCount();
+		return ((double)comments.size()) / ((double)this.getViewCount());
 	}
 	
 	public double calculateAnswersPerViews() {
-		return answers.size() / this.getViewCount();
+		return ((double)answers.size()) / ((double)this.getViewCount());
 	}
 
 	public double calculateFavoritesPerViews() {
-		return favoriteCount / this.getViewCount();
+		return ((double)favoriteCount) / ((double)this.getViewCount());
 	}
 	
 	/*
@@ -78,11 +79,11 @@ public class QuestionNode extends Post implements Commentable {
 		this.title = title;
 	}
 
-	public List<String> getTags() {
+	public List<Tag> getTags() {
 		return tags;
 	}
 
-	public void setTags(List<String> tags) {
+	public void setTags(List<Tag> tags) {
 		this.tags = tags;
 	}
 
@@ -108,5 +109,47 @@ public class QuestionNode extends Post implements Commentable {
 
 	public void setAnswers(List<AnswerNode> answers) {
 		this.answers = answers;
+	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = super.toString();
+		
+		DecimalFormat derivedScoreFormat = new DecimalFormat("###,###.###");
+		
+	    String answersPerViews = derivedScoreFormat.format(calculateAnswersPerViews());
+	    String commentsPerViews = derivedScoreFormat.format(calculateCommentsPerViews());
+	    String favoritesPerViews = derivedScoreFormat.format(calculateFavoritesPerViews());
+		
+	    returnString += "Accepted Answer Post ID: " + acceptedAnswerID;
+		returnString += "\n";
+		returnString += "Question Title: " + title;
+		returnString += "\n";
+		returnString += "Favorites: " + favoriteCount;
+		returnString += "\n";
+		returnString += "Favorites Per Views: " + favoritesPerViews;
+		returnString += "\n";
+		returnString += "Answer Vertex IDs: ";
+		for (AnswerNode answer : answers) {
+			returnString += answer.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		returnString += "Answers Per Views: " + answersPerViews;
+		returnString += "\n";
+		returnString += "Comment Vertex IDs: ";
+		for (CommentNode comment : comments) {
+			returnString += comment.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		returnString += "Comments Per Views: " + commentsPerViews;
+		returnString += "\n";	
+		returnString += "Tag IDs: ";
+		for (Tag tag : tags) {
+			returnString += tag.getTagID() + ", ";
+		}
+		returnString += "\n";
+		
+		return returnString;
 	}
 }

@@ -10,6 +10,7 @@
 
 package graph;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,5 +115,41 @@ public class UserNode extends Vertex {
 
 	public void setComments(List<CommentNode> comments) {
 		this.comments = comments;
+	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = super.toString();
+		
+		returnString += "User ID: " + userID;
+		returnString += "\n";
+		returnString += "Reputation: " + reputation;
+		returnString += "\n";
+		returnString += "Age: " + age;
+		returnString += "\n";
+		returnString += "Upvotes: " + upvotes;
+		returnString += "\n";
+		returnString += "Downvotes: " + downvotes;
+		returnString += "\n";
+		returnString += "Account ID: " + accountID;
+		returnString += "\n";
+		returnString += "Question Vertex IDs: ";
+		for (QuestionNode question : questions) {
+			returnString += question.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		returnString += "Answer Vertex IDs: ";
+		for (AnswerNode answer : answers) {
+			returnString += answer.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		returnString += "Comment Vertex IDs: ";
+		for (CommentNode comment : comments) {
+			returnString += comment.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		
+		return returnString;
 	}
 }

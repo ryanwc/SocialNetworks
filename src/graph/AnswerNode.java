@@ -10,6 +10,7 @@
 
 package graph;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class AnswerNode extends Post implements Commentable {
 	 */
 
 	public double calculateCommentsPerViews() {
-		return comments.size() / this.getViewCount();
+		return ((double)comments.size()) / ((double)this.getViewCount());
 	}
 	
 	/*
@@ -55,5 +56,26 @@ public class AnswerNode extends Post implements Commentable {
 	
 	public void setComments(List<CommentNode> comments) {
 		this.comments = comments;
+	}
+	
+	@Override
+	public String toString() {
+		
+		String returnString = super.toString();
+		
+		DecimalFormat derivedScoreFormat = new DecimalFormat("###,###.###");
+	    String commentsPerViews = derivedScoreFormat.format(calculateCommentsPerViews());
+
+	    returnString += "Parent Question Post ID: " + parentQuestionPostID;
+		returnString += "\n";
+		returnString += "Comment Vertex IDs: ";
+		for (CommentNode comment : comments) {
+			returnString += comment.getVertexID() + ", ";
+		}
+		returnString += "\n";
+		returnString += "Comments Per Views: " + commentsPerViews;
+		returnString += "\n";
+		
+		return returnString;
 	}
 }
