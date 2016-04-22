@@ -92,6 +92,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * @param num is the numerical id of the vertex to add
 	 * @param vertexType is the type of vertex to add
 	 */
+	@Override
 	public void addVertex(int vertexID, int vertexType) {
 		
 		if (vertexType != QUESTION || vertexType != ANSWER || 
@@ -129,11 +130,44 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	/** Add a vertex to the graph.
 	 * 
+	 * Adds an already-created question, answer, comment, or user node 
+	 * to the graph (puts it in the proper maps).
+	 * 
+	 * @param vertex is the Vertex object to add
+	 */
+	public void addVertex(Vertex vertex) {
+		
+		if (vertex instanceof QuestionNode) {
+			
+			addQuestionToGraph((QuestionNode)vertex);
+		}
+		else if (vertex instanceof AnswerNode) {
+			
+			addAnswerToGraph((AnswerNode)vertex);
+		}
+		else if (vertex instanceof CommentNode) {
+
+			addCommentToGraph((CommentNode)vertex);
+		}
+		else if (vertex instanceof UserNode) {
+		
+			addUserToGraph((UserNode)vertex);
+		}
+		else {
+			
+			throw new IllegalArgumentException("Vertices in a "
+					+ "StackExchangeTopicGraph must be a question, "
+					+ "answer, comment, or user.");
+		}
+	}
+	
+	/** Create a Vertex from a DOM Node and add it to the graph.
+	 * 
 	 * Adds a question, answer, comment, or user to the graph and sets
 	 * that vertex's state (e.g., view count).
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
-	 * @param node contains the vertex's data
+	 * @param node is a DOM XML node that contains the vertex's data
 	 * @param vertexType indicates the type of the vertex (question, answer,
 	 * comment, or user)
 	 */
@@ -553,7 +587,8 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		// QuestionNodes only know about their author (user)
 		for (QuestionNode question : questions.values()) {
-			
+			System.out.println("added edge of vertex " + question.getVertexID() +
+					" in graph " + this.topic);
 			UserNode author = users.get(question.getAuthorUserID());
 			
 			addEdge(question.getVertexID(), author.getVertexID());
@@ -842,114 +877,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		Vertex vertexSuper = graph.vertices.get(vertexToAddID);
 		Vertex vertexSCC = vertexSuper.makeCopy();
-		SCC.putVertexInCorrectMap(vertexSCC);
-		SCC.vertices.put(vertexSCC.getVertexID(), vertexSCC);
-	}
-	
-	/**	Add a vertex in a graph to the correct vertex type map.
-	 * 
-	 * @param vertex is the vertex to add to the correct map
-	 * @param graph is the graph in which to add the vertex to the
-	 * correct map
-	 */
-	private void putVertexInCorrectMap(Vertex vertex) {
-		
-		if (vertex instanceof QuestionNode) {
-			
-			questions.put(((QuestionNode)vertex).getPostID(),
-					(QuestionNode)vertex);
-		}
-		else if (vertex instanceof AnswerNode) {
-			
-			answers.put(((AnswerNode)vertex).getPostID(),
-					(AnswerNode)vertex);
-		}
-		else if (vertex instanceof CommentNode) {
-			
-			comments.put(((CommentNode)vertex).getPostID(),
-					(CommentNode)vertex);
-		}
-		else {
-			
-			users.put(((UserNode)vertex).getUserID(),
-					(UserNode)vertex);
-		}
-	}
-	
-	//TODO: Put a makeCopy method in each vertex type instead of here
-	/** Makes a copy of a Vertex
-	 * 
-	 * Creates a new Vertex with all object values that are initially
-	 * passed to the Vertex's constructor equal to the same values 
-	 * from the Vertex's current state.
-	 * 
-	 * This means, for example, that the new Vertex will have the same
-	 * vertexID and userID as the given Vertex because those values are 
-	 * passed to the constructor, but not the same list of out edges 
-	 * because the list of outEdges is not passed to the constructor.
-	 * 
-	 * @param vertex
-	 * @return a copy of the given Vertex
-	 */
-	public Vertex makeCopy(Vertex vertex) {
-		
-		Vertex vertexCopy;
-		
-		if (vertex instanceof UserNode) {
-			
-			vertexCopy = new UserNode(vertex.getVertexID(), vertex.getName(),
-					((UserNode)vertex).getUserID(), 
-					((UserNode)vertex).getReputation(),
-					((UserNode)vertex).getAge(),
-					((UserNode)vertex).getUpvotes(), 
-					((UserNode)vertex).getDownvotes(),
-					((UserNode)vertex).getAccountID());
-		}
-		else if (vertex instanceof QuestionNode) {
-			
-			vertexCopy = new QuestionNode(vertex.getVertexID(),
-					vertex.getName(),
-					((QuestionNode)vertex).getTopic(),
-					((QuestionNode)vertex).getPostID(),
-					((QuestionNode)vertex).getRawScore(),
-					((QuestionNode)vertex).getBody(),
-					((QuestionNode)vertex).getAuthorUserID(),
-					((QuestionNode)vertex).getComments().size(),
-					((QuestionNode)vertex).getViewCount(),
-					((QuestionNode)vertex).getAcceptedAnswerId(),
-					((QuestionNode)vertex).getTitle(), 
-					((QuestionNode)vertex).getTags(),
-					((QuestionNode)vertex).getAnswers().size(), 
-					((QuestionNode)vertex).getFavoriteCount());
-		}
-		else if (vertex instanceof AnswerNode) {
-			
-			vertexCopy = new AnswerNode(vertex.getVertexID(), vertex.getName(),
-					((AnswerNode)vertex).getTopic(), 
-					((AnswerNode)vertex).getPostID(),
-					((AnswerNode)vertex).getRawScore(),
-					((AnswerNode)vertex).getBody(),
-					((AnswerNode)vertex).getAuthorUserID(),
-					((AnswerNode)vertex).getComments().size(),
-					((AnswerNode)vertex).getParentQuestionPostID(),
-					((AnswerNode)vertex).getViewCount());
-		}
-		else if (vertex instanceof CommentNode) {
-			vertexCopy = new CommentNode(vertex.getVertexID(), vertex.getName(),
-					((CommentNode)vertex).getTopic(),
-					((CommentNode)vertex).getPostID(),
-					((CommentNode)vertex).getRawScore(),
-					((CommentNode)vertex).getBody(),
-					((CommentNode)vertex).getAuthorUserID(),
-					((CommentNode)vertex).getParentPostID(),
-					((CommentNode)vertex).getViewCount());
-		}
-		else {
-			throw new IllegalArgumentException("Vertex must be a UserNode, "
-					+ "QuestionNode, AnswerNode, or CommentNode");
-		}
-		
-		return vertexCopy;
+		SCC.addVertex(vertexSCC);
 	}
 	
 	/** Do a depth-first search as a helper method for discovering SCCs.
@@ -990,8 +918,7 @@ public class StackExchangeTopicGraph implements Graph {
 		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
 
 			Vertex vertexCopy = vertex.makeCopy();
-			SCC.putVertexInCorrectMap(vertexCopy);
-			SCC.vertices.put(vertexCopy.getVertexID(),vertexCopy);
+			SCC.addVertex(vertexCopy);
 		}
 		
 		for (Integer neighborID : vertex.getOutEdges()) {
@@ -1005,8 +932,7 @@ public class StackExchangeTopicGraph implements Graph {
 					!SCC.getVertices().keySet().contains(neighborID)) {
 
 					Vertex neighborCopy = neighbor.makeCopy();
-					SCC.putVertexInCorrectMap(neighborCopy);
-					SCC.vertices.put(neighborCopy.getVertexID(),neighborCopy);
+					SCC.addVertex(neighborCopy);
 				}
 			}
 			
@@ -1043,9 +969,7 @@ public class StackExchangeTopicGraph implements Graph {
 			if (!transposeVertices.keySet().contains(vertexID)) {
 				
 				Vertex vertexCopy = vertex.makeCopy();
-				transposeGraph.putVertexInCorrectMap(vertexCopy);
-				transposeGraph.vertices.put(vertexCopy.getVertexID(),
-						vertexCopy);
+				transposeGraph.addVertex(vertexCopy);
 			}
 			
 			List<Integer> oldOutEdges = vertex.getOutEdges();
@@ -1059,9 +983,7 @@ public class StackExchangeTopicGraph implements Graph {
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
 					Vertex oldOutVertCopy = oldOutVert.makeCopy();
-					transposeGraph.putVertexInCorrectMap(oldOutVertCopy);
-					transposeGraph.vertices.put(oldOutVertCopy.getVertexID(),
-							oldOutVertCopy);
+					transposeGraph.addVertex(oldOutVertCopy);
 				}
 			}
 		}
@@ -1121,9 +1043,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		// add the center to the egonet
 		Vertex cVertParentGraphCopy = cVertParentGraph.makeCopy();
-		egonet.getVertices().put(cVertParentGraphCopy.getVertexID(),
-				cVertParentGraphCopy);
-		egonet.putVertexInCorrectMap(cVertParentGraphCopy);
+		egonet.addVertex(cVertParentGraphCopy);
 		
 		// populate egonet with vertices and edges up to
 		// (and including) one user away from center
@@ -1137,7 +1057,9 @@ public class StackExchangeTopicGraph implements Graph {
 			egonet.DFSEgoNet(this, egonet, otherUserVertexID,
 							 vertIDsFoundByOtherUsers);
 		}
-
+		
+		egonet.addAllEdges();
+		
 		return egonet;
 	}
 	
@@ -1174,10 +1096,13 @@ public class StackExchangeTopicGraph implements Graph {
 			// the edges
 			// candidate for redesign: separate method for discovering
 			// vertices and adding edges. could be cleaner
+			// TODO: do i even need to add edges singly or can i just
+			// egonet.addAllEdges() at the end of getEgonet()?
 			if (foundByOtherUser == null) {
 				
-				egonet.addEdge(vertexID, outVertexCopy.getVertexID());
-				egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
+				//System.out.println("Adding edge from " + vertexID + " to " + outVertexCopy.getVertexID());
+				//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
+				//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
 			}
 
 			// if this vertex is not already in the egonet
@@ -1186,9 +1111,7 @@ public class StackExchangeTopicGraph implements Graph {
 				// if we started from the center
 				if (foundByOtherUser == null) {
 				
-					egonet.getVertices().put(outVertexCopy.getVertexID(),
-						outVertexCopy);
-					egonet.putVertexInCorrectMap(outVertexCopy);
+					egonet.addVertex(outVertexCopy);
 				}
 				else {
 					// if we did not start from center, and if this 
@@ -1207,11 +1130,9 @@ public class StackExchangeTopicGraph implements Graph {
 							// means there is a direct link between it and another 
 							// user directly connected to center user, so add it
 							// and its edges to the ego net
-							egonet.getVertices().put(outVertexCopy.getVertexID(),
-									outVertexCopy);
-							egonet.putVertexInCorrectMap(outVertexCopy);
-							egonet.addEdge(vertexID, outVertexCopy.getVertexID());
-							egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
+							egonet.addVertex(outVertexCopy);
+							//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
+							//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
 							
 							// still need to connect other users to their immediate
 						}
@@ -1231,8 +1152,8 @@ public class StackExchangeTopicGraph implements Graph {
 				// at this point everything is in the egonet except for edges 
 				// between not-center users and their egonet posts.
 				// this is one of those users' posts. so, add the edges
-				egonet.addEdge(vertexID, outVertex.getVertexID());
-				egonet.addEdge(outVertex.getVertexID(), vertexID);
+				//egonet.addEdge(vertexID, outVertex.getVertexID());
+				//egonet.addEdge(outVertex.getVertexID(), vertexID);
 			}
 		}
 	}
