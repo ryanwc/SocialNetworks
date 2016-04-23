@@ -1066,9 +1066,7 @@ public class StackExchangeTopicGraph implements Graph {
 			// do a DFS from it to add vertices directly linking other users
 			if (vertex instanceof UserNode &&
 				vertex.getVertexID() != cVertParentGraph.getVertexID()) {
-				
-				System.out.println("Center found user vert id " + vertex.getVertexID() +
-						" so doing DFSegonet from it");
+
 				egonet.DFSEgoNet(this, egonet, vertex.getVertexID(),
 						vertex.getVertexID(), vertsNotFoundByCenterToFinder);
 			}
@@ -1108,24 +1106,6 @@ public class StackExchangeTopicGraph implements Graph {
 			
 			Vertex outVertex = parent.getVertices().get(outVertexID);
 			Vertex outVertexCopy = outVertex.makeCopy();
-			
-			System.out.println("Considering vert " + outVertexCopy.getVertexID() + 
-					" which is an out edge of " + vertexID);
-			
-			// if we started from center, it's OK to immediately add
-			// the edges
-			// candidate for redesign: separate method for discovering
-			// vertices and adding edges. could be cleaner
-			// TODO: do i even need to add edges singly or can i just
-			// egonet.addAllEdges() at the end of getEgonet()?
-			/*
-			if (foundByOtherUser == null) {
-				
-				//System.out.println("Adding edge from " + vertexID + " to " + outVertexCopy.getVertexID());
-				//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
-				//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
-			}
-			*/
 
 			// if this vertex is not already in the egonet
 			if (!egonet.getVertices().containsKey(outVertexCopy.getVertexID())) {
@@ -1146,9 +1126,7 @@ public class StackExchangeTopicGraph implements Graph {
 						if (!vertsNotFoundByCenterToFinder.keySet().
 								contains(outVertexCopy.getVertexID())) {
 							
-							System.out.println(vertexID + " found "  +
-									outVertexCopy.getVertexID() + " for the first time");
-							
+							// index 0 = first finder, index 1 = second finder
 							Integer[] firstAndSecondFinders = {userDFSInitiatorVertID,null};
 							
 							vertsNotFoundByCenterToFinder.put(outVertexCopy.getVertexID(),
@@ -1182,10 +1160,6 @@ public class StackExchangeTopicGraph implements Graph {
 										  outVertexCopy.getVertexID(), 
 										  vertsNotFoundByCenterToFinder);
 							}
-							//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
-							//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
-							
-							// still need to connect other users to their immediate
 						}
 					}
 				}
@@ -1197,16 +1171,6 @@ public class StackExchangeTopicGraph implements Graph {
 					DFSEgoNet(parent, egonet, userDFSInitiatorVertID,
 							  outVertexID, vertsNotFoundByCenterToFinder);
 				}	
-			}
-			else if (outVertexCopy instanceof UserNode &&
-					vertsNotFoundByCenterToFinder != null &&
-					 egonet.getVertices().containsKey(vertexID)) {
-				
-				// at this point everything is in the egonet except for edges 
-				// between not-center users and their egonet posts.
-				// this is one of those users' posts. so, add the edges
-				//egonet.addEdge(vertexID, outVertex.getVertexID());
-				//egonet.addEdge(outVertex.getVertexID(), vertexID);
 			}
 		}
 	}
