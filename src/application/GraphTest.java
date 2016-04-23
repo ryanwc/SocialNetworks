@@ -21,13 +21,23 @@ public class GraphTest {
 		
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Test Topic 1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
+		
+		/* Print test
 		graph.printGraph();
+		*/
+		
+		/* SCC test
 		List<Graph> SCCs = graph.getSCCs();
 		for (Graph SCC : SCCs) {
 			if (SCC instanceof StackExchangeTopicGraph) {
 				((StackExchangeTopicGraph) SCC).printGraph();
 			}
 		}
+		//*/
+		
+		///* egonet test
+		((StackExchangeTopicGraph)graph.getEgonet(1)).printGraph();
+		//*/
 		
 		//testGraph.printGraph();
 		

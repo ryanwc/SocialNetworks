@@ -787,6 +787,7 @@ public class StackExchangeTopicGraph implements Graph {
 	@Override
 	public List<Graph> getSCCs() {
 		//TODO: add tags to each SCC
+		//TODO: ensure each SCC has SCC as topic, not parent graph
 		Stack<Integer> vertexIDStack = new Stack<Integer>();
 		
 		for (int vertexID : vertices.keySet()) {
@@ -1030,6 +1031,7 @@ public class StackExchangeTopicGraph implements Graph {
 				new StackExchangeTopicGraph("Egonet for vertex " + center + 
 						" within " + topic); 
 		//TODO: Add tags to egonet
+		//TODO: Ensure egonet vertices have the egonet as topic, not parent graph's topic
 		Vertex cVertParentGraph = vertices.get(center);
 		
 		// question: should egonet be different for a post?
@@ -1047,15 +1049,29 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		// populate egonet with vertices and edges up to
 		// (and including) one user away from center
-		egonet.DFSEgoNet(this, egonet, cVertParentGraph.getVertexID(), null);
+		egonet.DFSEgoNet(this, egonet, cVertParentGraph.getVertexID(),
+						 cVertParentGraph.getVertexID(), null);
 		
-		Set<Integer> vertIDsFoundByOtherUsers = new HashSet<Integer>();
+		// to avoid concurrent modification exception in for loop just below
+		Set<Integer> vertIDsFoundByCenter = 
+				new HashSet<Integer>(egonet.getVertices().keySet());
+		Map<Integer,Integer[]> vertsNotFoundByCenterToFinder = 
+				new HashMap<Integer,Integer[]>();
 		
-		// add vertices and edges directly linking other users
-		for (int otherUserVertexID : egonet.getUsers().keySet()) {
+		for (int vertexID : vertIDsFoundByCenter) {
 			
-			egonet.DFSEgoNet(this, egonet, otherUserVertexID,
-							 vertIDsFoundByOtherUsers);
+			Vertex vertex = egonet.getVertices().get(vertexID);
+			
+			// if the vertex found by center is a user and is not the center,
+			// do a DFS from it to add vertices directly linking other users
+			if (vertex instanceof UserNode &&
+				vertex.getVertexID() != cVertParentGraph.getVertexID()) {
+				
+				System.out.println("Center found user vert id " + vertex.getVertexID() +
+						" so doing DFSegonet from it");
+				egonet.DFSEgoNet(this, egonet, vertex.getVertexID(),
+						vertex.getVertexID(), vertsNotFoundByCenterToFinder);
+			}
 		}
 		
 		egonet.addAllEdges();
@@ -1081,8 +1097,9 @@ public class StackExchangeTopicGraph implements Graph {
 	 * Should be null if this call starts at the center of the egonet.
 	 */
 	public void DFSEgoNet(StackExchangeTopicGraph parent, 
-						  StackExchangeTopicGraph egonet,
-						  int vertexID, Set<Integer> foundByOtherUser) {
+						  StackExchangeTopicGraph egonet, 
+						  int userDFSInitiatorVertID, int vertexID, 
+						  Map<Integer,Integer[]> vertsNotFoundByCenterToFinder) {
 		
 		Vertex vertex = parent.getVertices().get(vertexID);
 		List<Integer> outVertexIDs = vertex.getOutEdges();
@@ -1092,24 +1109,29 @@ public class StackExchangeTopicGraph implements Graph {
 			Vertex outVertex = parent.getVertices().get(outVertexID);
 			Vertex outVertexCopy = outVertex.makeCopy();
 			
+			System.out.println("Considering vert " + outVertexCopy.getVertexID() + 
+					" which is an out edge of " + vertexID);
+			
 			// if we started from center, it's OK to immediately add
 			// the edges
 			// candidate for redesign: separate method for discovering
 			// vertices and adding edges. could be cleaner
 			// TODO: do i even need to add edges singly or can i just
 			// egonet.addAllEdges() at the end of getEgonet()?
+			/*
 			if (foundByOtherUser == null) {
 				
 				//System.out.println("Adding edge from " + vertexID + " to " + outVertexCopy.getVertexID());
 				//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
 				//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
 			}
+			*/
 
 			// if this vertex is not already in the egonet
 			if (!egonet.getVertices().containsKey(outVertexCopy.getVertexID())) {
 					
 				// if we started from the center
-				if (foundByOtherUser == null) {
+				if (vertsNotFoundByCenterToFinder == null) {
 				
 					egonet.addVertex(outVertexCopy);
 				}
@@ -1119,18 +1141,47 @@ public class StackExchangeTopicGraph implements Graph {
 					// to the egonet
 					if (!(outVertexCopy instanceof UserNode)) {
 						
-						// if it was NOT already found by another user
-						// mark it as found
-						if (!foundByOtherUser.contains(outVertexCopy.getVertexID())) {
+						// if it was not already found by another user
+						// mark it as found and do a DFS from it
+						if (!vertsNotFoundByCenterToFinder.keySet().
+								contains(outVertexCopy.getVertexID())) {
 							
-							foundByOtherUser.add(outVertexCopy.getVertexID());
+							System.out.println(vertexID + " found "  +
+									outVertexCopy.getVertexID() + " for the first time");
+							
+							Integer[] firstAndSecondFinders = {userDFSInitiatorVertID,null};
+							
+							vertsNotFoundByCenterToFinder.put(outVertexCopy.getVertexID(),
+															  firstAndSecondFinders);
+							
+							DFSEgoNet(parent, egonet, userDFSInitiatorVertID,
+									  outVertexCopy.getVertexID(), 
+									  vertsNotFoundByCenterToFinder);
 						}
-						else {
-							// if it WAS already found by another user, that
-							// means there is a direct link between it and another 
-							// user directly connected to center user, so add it
-							// and its edges to the ego net
-							egonet.addVertex(outVertexCopy);
+						else if (vertsNotFoundByCenterToFinder.
+								 get(outVertexCopy.getVertexID())[0] != userDFSInitiatorVertID) {
+							// above is "if it was already found once *another* user"
+							
+							if (vertsNotFoundByCenterToFinder.
+								 get(outVertexCopy.getVertexID())[1] == null) {
+								// found for the second time, so add to egonet
+								System.out.println(vertexID + " found "  +
+										outVertexCopy.getVertexID() + " for the second time");
+								egonet.addVertex(outVertexCopy);
+								// set as found second time by this user caller
+								vertsNotFoundByCenterToFinder.
+								 get(outVertexCopy.getVertexID())[1] = userDFSInitiatorVertID;
+							}
+							
+							// if the user that discovered this vertex for the second time
+							// was this user, we need to continue this user's DFS
+							if (vertsNotFoundByCenterToFinder.get(outVertexCopy.getVertexID())[1] 
+									== userDFSInitiatorVertID) {
+								
+								DFSEgoNet(parent, egonet, userDFSInitiatorVertID,
+										  outVertexCopy.getVertexID(), 
+										  vertsNotFoundByCenterToFinder);
+							}
 							//egonet.addEdge(vertexID, outVertexCopy.getVertexID());
 							//egonet.addEdge(outVertexCopy.getVertexID(), vertexID);
 							
@@ -1139,14 +1190,16 @@ public class StackExchangeTopicGraph implements Graph {
 					}
 				}
 				
-				// do another DFS is not a user
-				if (!(outVertex instanceof UserNode)) {
+				// do another DFS is not a user and it's the first pass
+				if (!(outVertex instanceof UserNode) && 
+					vertsNotFoundByCenterToFinder == null) {
 					
-					DFSEgoNet(parent, egonet, outVertexID, foundByOtherUser);	
+					DFSEgoNet(parent, egonet, userDFSInitiatorVertID,
+							  outVertexID, vertsNotFoundByCenterToFinder);
 				}	
 			}
 			else if (outVertexCopy instanceof UserNode &&
-					 foundByOtherUser != null &&
+					vertsNotFoundByCenterToFinder != null &&
 					 egonet.getVertices().containsKey(vertexID)) {
 				
 				// at this point everything is in the egonet except for edges 
