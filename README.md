@@ -29,31 +29,34 @@ Many thanks to the UCSD Mooc Team for putting these materials together, providin
 
 The following paragraph is the license information for the all of the code and files added to this GitHub repository after the inital commit and all of the changes made to the code and files provided in the initial commit:
 
-**Created by Ryan William Connor in April 2016.
-Copyright © 2016 Ryan William Connor.  All rights reserved.**
+**
+** Created by Ryan William Connor in April 2016.
+** Copyright © 2016 Ryan William Connor.  All rights reserved.
+**
 
-The following italicized section is the license information for the files and code as seen in the initial commit of this GitHub repository:
+The following section is the license information for the files and code as seen in the initial commit of this GitHub repository:
 
-**The software developed specifically as part of the Coursera/UCSD Course is distributed under the MIT License.  
-
-The MIT License (MIT)
-
-Copyright (c) 2015 UC San Diego Intermediate Software Development MOOC team
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.**
+** The software developed specifically as part of the Coursera/UCSD Course is
+** distributed under the MIT License.  
+**
+** The MIT License (MIT)
+**
+** Copyright (c) 2015 UC San Diego Intermediate Software Development MOOC team
+**
+** Permission is hereby granted, free of charge, to any person obtaining a cop
+** of this software and associated documentation files (the "Software"), to dea
+** in the Software without restriction, including without limitation the right
+** to use, copy, modify, merge, publish, distribute, sublicense, and/or sel
+** copies of the Software, and to permit persons to whom the Software is
+** furnished to do so, subject to the following conditions:
+**
+** The above copyright notice and this permission notice shall be included in all
+** copies or substantial portions of the Software.
+**
+** THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+** IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+** FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+** AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+** LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+** OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+** SOFTWARE.
