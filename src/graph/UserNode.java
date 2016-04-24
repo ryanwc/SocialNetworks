@@ -17,7 +17,7 @@ public class UserNode extends Vertex {
 
 	private int userID;
 	private int reputation;
-	private int age;
+	private Integer age; // nullable
 	private int upvotes;
 	private int downvotes;
 	private int accountID;
@@ -29,7 +29,7 @@ public class UserNode extends Vertex {
 	// private List<Badge> badges;
 	
 	public UserNode(int vertexID, String name, int userID, int reputation, 
-					int age, int upvotes, int downvotes, int accountID) {
+					Integer age, int upvotes, int downvotes, int accountID) {
 		super(vertexID, name);
 		
 		this.userID = userID;
@@ -80,11 +80,11 @@ public class UserNode extends Vertex {
 		this.reputation = reputation;
 	}
 
-	public int getAge() {
+	public Integer getAge() {
 		return age;
 	}
 
-	public void setAge(int age) {
+	public void setAge(Integer age) {
 		this.age = age;
 	}
 

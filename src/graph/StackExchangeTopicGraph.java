@@ -452,7 +452,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		NamedNodeMap nodeAttributes = node.getAttributes();
 		
-		if (nodeAttributes.getNamedItem("Age") == null) {
+		if (nodeAttributes.getNamedItem("DisplayName") == null) {
 			throw new IllegalArgumentException("Given node does not represent "
 					+ "a user");
 		}
@@ -463,8 +463,17 @@ public class StackExchangeTopicGraph implements Graph {
 				getNamedItem("Id").getNodeValue());
 		int reputation = Integer.parseInt(nodeAttributes.
 				getNamedItem("Reputation").getNodeValue());
-		int age = Integer.parseInt(nodeAttributes.
-				getNamedItem("Age").getNodeValue());
+		
+		Integer age;
+		
+		if (nodeAttributes.getNamedItem("Age") != null) {
+			age = Integer.parseInt(nodeAttributes.
+					getNamedItem("Age").getNodeValue());
+		}
+		else {
+			age = null;
+		}
+		
 		int upVotes = Integer.parseInt(nodeAttributes.
 				getNamedItem("UpVotes").getNodeValue());
 		int downVotes = Integer.parseInt(nodeAttributes.
@@ -642,7 +651,7 @@ public class StackExchangeTopicGraph implements Graph {
 		int userID = -(users.size()-1);
 		String name = "Default User";
 		int reputation = 0;
-		int age = 0;
+		Integer age = null;
 		int upvotes = 0;
 		int downvotes = 0;
 		int accountID = -2;
@@ -1175,10 +1184,16 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 	}
 	
-	/** Detect communities in the graph.
+	/** Detect this graph's communities.
 	 * 
+	 * @param numCommunities is the number of communities to separate this 
+	 * StackExchangeTopicGraph into. [Pass null value to find all communities]
+	 * @return a list of graphs, each representing one of this 
+	 * graph's communities
 	 */
-	public void detectCommunities() {
+	public List<Graph> getCommunities(Integer numCommunities) {
+		
+		ArrayList<Graph> communities = new ArrayList<Graph>();
 	/*
 		- Compute “betweenness” of all edges (i.e., calculate shortest path between every pair of vertices and count how many times each edge appears in a path)
 			- for each node v (O(v)) (linear at this point)
@@ -1188,6 +1203,7 @@ public class StackExchangeTopicGraph implements Graph {
 		- Remove edge(s) of highest betweenness
 		- Repeat with graph subsections until there are no more edges, or until have separated graph into desired number of components (O(|E|)) (cubic at this point)
 	*/
+		return communities;
 	}
 	
 	public String getTopic() {
