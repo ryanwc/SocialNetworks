@@ -89,8 +89,12 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * @see graph.Graph#addVertex(int)
 	 * 
-	 * @param num is the numerical id of the vertex to add
-	 * @param vertexType is the type of vertex to add
+	 * @param vertexID is the id of the top vertex in the created 
+	 * dummy vertex chain.  For example, if the type to add is a 
+	 * user, vertexID is the id of the user.  If the type to add is
+	 * a comment, vertexID is the id of the author of the parent
+	 * post of the comment.
+	 * @param vertexType is the type of vertex to add.
 	 */
 	@Override
 	public void addVertex(int vertexID, int vertexType) {
@@ -103,29 +107,46 @@ public class StackExchangeTopicGraph implements Graph {
 					+ "answer, comment, or user");
 		}
 		
+		Vertex vertex;
+		
+		// it's probably bad to add lots of dummy posts,
+		// especially if they are comments or answers because these will
+		// also create a corresponding parent dummy question and 
+		// dummy author users)
 		if (vertexID == USER) {
 			
-			addDummyUser(vertexID);
+			vertex = createDummyUser(vertexID);
+		}
+		else if (vertexID == QUESTION){
+				
+			vertex = createDummyQuestion(vertexID);
+		}
+		else if (vertexType == ANSWER) {
+				
+			vertex = createDummyAnswer(vertexID);
+		}
+		else if (vertexType == COMMENT){
+			
+			// random parent type
+			int coinFlip = (int)Math.random();
+			int parentType;
+			
+			if (coinFlip == 0) {
+				parentType = QUESTION;
+			}
+			else {
+				parentType = ANSWER;
+			}
+			vertex = createDummyComment(vertexID, parentType);
 		}
 		else {
 			
-			// it's probably bad to add lots of dummy posts,
-			// especially if they are comments or answers because these will
-			// also create a corresponding parent dummy question)
-			
-			if (vertexType == QUESTION) {
-				
-				addDummyQuestion(vertexID);
-			}
-			if (vertexType == ANSWER) {
-				
-				addDummyAnswer(vertexID);
-			}
-			else {
-			
-				addDummyComment(vertexID);
-			}
+			throw new IllegalArgumentException("Vertices in a "
+					+ "StackExchangeTopicGraph must be a question, "
+					+ "answer, comment, or user.");
 		}
+		
+		addVertex(vertex);
 	}
 	
 	/** Add a vertex to the graph.
@@ -173,25 +194,23 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	public void addVertex(int vertexID, Node node, int vertexType) {
 		
+		Vertex vertex;
+		
 		if (vertexType == QUESTION) {
 			
-			QuestionNode question = createQuestionFromDOMNode(vertexID, node);
-			addQuestionToGraph(question);
+			vertex = createQuestionFromDOMNode(vertexID, node);
 		}
 		else if (vertexType == ANSWER) {
 			
-			AnswerNode answer = createAnswerFromDOMNode(vertexID, node);
-			addAnswerToGraph(answer);
+			vertex = createAnswerFromDOMNode(vertexID, node);
 		}
 		else if (vertexType == COMMENT) {
 			
-			CommentNode comment = createCommentFromDOMNode(vertexID, node);
-			addCommentToGraph(comment);
+			vertex = createCommentFromDOMNode(vertexID, node);
 		}
 		else if (vertexType == USER) {
 		
-			UserNode user = createUserFromDOMNode(vertexID, node);
-			addUserToGraph(user);
+			vertex = createUserFromDOMNode(vertexID, node);
 		}
 		else {
 			
@@ -199,6 +218,8 @@ public class StackExchangeTopicGraph implements Graph {
 					+ "StackExchangeTopicGraph must be a question, "
 					+ "answer, comment, or user.");
 		}
+		
+		addVertex(vertex);
 	}
 	
 	/** Create a QuestionNode with data from a DOM Node.
@@ -206,6 +227,10 @@ public class StackExchangeTopicGraph implements Graph {
 	 * This method relies on the given node being an XML DOM representation
 	 * of a StackExchange question per the schema described at:
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
+	 * 
+	 * NOTE: This will throw a null pointer exception if the given Node
+	 * has no author.  uril.GraphLoader.populateStackExchangeTopicGraph() discards
+	 * questions with no author automatically.
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
 	 * @param node contains the question's data
@@ -248,8 +273,13 @@ public class StackExchangeTopicGraph implements Graph {
 		String title = nodeAttributes.getNamedItem("Title").getNodeValue();
 		int answerCount = Integer.parseInt(nodeAttributes.
 				getNamedItem("AnswerCount").getNodeValue());
-		int favoriteCount = Integer.parseInt(nodeAttributes.
-				getNamedItem("FavoriteCount").getNodeValue());
+		
+		int favoriteCount = 0;
+		if (nodeAttributes.getNamedItem("FavoriteCount") != null) {
+			favoriteCount = Integer.parseInt(nodeAttributes.
+					getNamedItem("FavoriteCount").getNodeValue());
+		}
+
 		String tagsString = nodeAttributes.getNamedItem("Tags").getNodeValue();
 		
 		if (vertices.containsKey(vertexID)) {
@@ -303,6 +333,10 @@ public class StackExchangeTopicGraph implements Graph {
 	 * This method relies on the given node being an XML DOM representation
 	 * of a StackExchange answer per the schema described at:
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
+	 * 
+	 * NOTE: This will throw a null pointer exception if the given Node
+	 * has no author.  uril.GraphLoader.populateStackExchangeTopicGraph() discards
+	 * questions with no author automatically.
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
 	 * @param node contains the answer's data
@@ -596,8 +630,7 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		// QuestionNodes only know about their author (user)
 		for (QuestionNode question : questions.values()) {
-			System.out.println("added edge of vertex " + question.getVertexID() +
-					" in graph " + this.topic);
+
 			UserNode author = users.get(question.getAuthorUserID());
 			
 			addEdge(question.getVertexID(), author.getVertexID());
@@ -641,44 +674,56 @@ public class StackExchangeTopicGraph implements Graph {
 		// All edges from UserNodes to other vertices are handled above
 	}
 	
-	/** Add a user with dummy data to the graph.
+	/** Create a user with dummy data.
 	 * 
-	 * @param vertexID is the unique id of the vertex in this graph
+	 * One example use of this method is creating a dummy user to act as 
+	 * the parent of posts whose real user has been deleted from the
+	 * Stack Exchange community.
+	 * 
+	 * @param vertexID is the id of the vertex in this graph
+	 * @return a new UserNode with dummy data
 	 */
-	private UserNode addDummyUser(int vertexID) {
+	public UserNode createDummyUser(int vertexID) {
 		
-		// does not quite ensure unique questionID
+		// does not quite ensure unique userID for each dummy node
 		int userID = -(users.size()-1);
 		String name = "Default User";
 		int reputation = 0;
 		Integer age = null;
 		int upvotes = 0;
 		int downvotes = 0;
+		// same accountID for all dummy users
 		int accountID = -2;
 		
 		UserNode user = new UserNode(vertexID, name, userID,reputation, 
 				age, upvotes, downvotes, accountID);
 		
-		vertices.put(user.getVertexID(), user);
-		users.put(user.getUserID(), user);
-		
-		uniqueVertexIDCounter++;
-		
 		return user;
 	}
 	
-	/** Add a question with dummy data to the graph.
+	/** Create a question with dummy data.
 	 * 
-	 * @param vertexID is the unique id of the vertex in this graph
+	 * Before creating the question node, creates a dummy UserNode
+	 * author and adds it to the graph.
+	 * 
+	 * Does not add the created dummy question to the graph.
+	 * 
+	 * @param vertexID is the id of the vertex of the dummy user that will
+	 * be the author of this question
+	 * @return a new QuestionNode with dummy data (including dummy author)
 	 */
-	private QuestionNode addDummyQuestion(int vertexID) {
+	public QuestionNode createDummyQuestion(int vertexID) {
+		
+		UserNode user = createDummyUser(vertexID);
+		addVertex(user);
 		
 		// does not quite ensure unique questionID
 		int postID = -(questions.size()-1);
 		String name = "Default Question";
 		int rawScore = 0;
 		String body = "";
-		int authorID = -2;
+		// need to create dummy user first
+		int authorID = user.getUserID();
 		int commentCount = 0;
 		int viewCount = 0;
 		Integer acceptedAnswerID = null;
@@ -691,21 +736,24 @@ public class StackExchangeTopicGraph implements Graph {
 				postID, rawScore, body, authorID, commentCount, viewCount, 
 				acceptedAnswerID, title, tagIDs, answerCount, favoriteCount);
 		
-		vertices.put(question.getVertexID(), question);
-		questions.put(question.getPostID(), question);
-		
-		uniqueVertexIDCounter++;
-		
 		return question;
 	}
 	
-	/** Add an answer with dummy data to the graph.
+	/** Create an AnswerNode with dummy data.
 	 * 
-	 * @param vertexID is the unique id of the vertex in this graph
+	 * Before creating the answer node, creates a dummy UserNode
+	 * author and adds it to the graph.
+	 * 
+	 * Does not add the created dummy answer to the graph.
+	 * 
+	 * @param vertexID is the id of the vertex of the dummy user that will
+	 * be the author of the new dummy answer
+	 * @return a new AnswerNode with dummy data (including dummy author)
 	 */
-	private void addDummyAnswer(int vertexID) {
+	public AnswerNode createDummyAnswer(int vertexID) {
 		
-		QuestionNode parentQuestion = addDummyQuestion(vertexID);
+		QuestionNode parentQuestion = createDummyQuestion(vertexID);
+		addVertex(parentQuestion);
 		
 		// does not quite ensure unique answerID
 		int postID = -(answers.size()-1);
@@ -719,35 +767,57 @@ public class StackExchangeTopicGraph implements Graph {
 				postID, rawScore, body, authorID, commentCount, 
 				parentQuestion.getPostID(), parentQuestion.getViewCount());
 		
-		vertices.put(answer.getVertexID(), answer);
-		answers.put(answer.getPostID(), answer);
-		
-		uniqueVertexIDCounter++;
+		return answer;
 	}
 	
-	/** Add a comment with dummy data to the graph.
+	/** Create a dummy comment on a dummy question or answer.
 	 * 
-	 * @param vertexID is the unique id of the vertex in this graph
+	 * In addition to creating a dummy comment, will create a dummy 
+	 * question or answer to be the parent, add that parent to the
+	 * graph, create a dummy user to be the author of the parent question, 
+	 * add that dummy user to the graph, create a dummy user to be the author
+	 * of the dummy comment, and add that dummy user to the graph.
+	 * 
+	 * Does not add the created dummy CommentNode to the graph.
+	 * 
+	 * @param vertexID is the id of the vertex that will
+	 * represent the author of the new dummy comment's parent post
+	 * @param parentType is the type of the parent post for the returned
+	 * CommentNode.  parentType must be a question or answer or else
+	 * an illegal argument exception is thrown.
+	 * @return a new CommentNode with dummy data
 	 */
-	private void addDummyComment(int vertexID) {
+	public CommentNode createDummyComment(int parentVertexID, int parentType) {
 		
-		QuestionNode parentPost = addDummyQuestion(vertexID);
+		Post parentPost;
+		
+		if (parentType == QUESTION) {
+			parentPost = createDummyQuestion(parentVertexID);
+		}
+		else if (parentType == ANSWER) {
+			parentPost = createDummyAnswer(parentVertexID);
+		}
+		else {
+			throw new IllegalArgumentException("Parent post of a comment "
+					+ "must be a question or an answer");
+		}
+		
+		addVertex(parentPost);
+		
+		UserNode author = createDummyUser(uniqueVertexIDCounter);
+		addVertex(author);
 		
 		// does not quite ensure unique answerID
 		int commentID = -(comments.size()-1);
 		String name = "Default Comment";
 		int rawScore = 0;
 		String body = "";
-		int authorID = -2;
 		
 		CommentNode comment = new CommentNode(uniqueVertexIDCounter, name, topic,
-				commentID, rawScore, body, authorID, 
+				commentID, rawScore, body, author.getUserID(),
 				parentPost.getPostID(), parentPost.getViewCount());
 		
-		vertices.put(comment.getVertexID(), comment);
-		comments.put(comment.getPostID(), comment);
-		
-		uniqueVertexIDCounter++;
+		return comment;
 	}
 	
 	/** Creates a list of tags from raw tag data in a question DOM node.
@@ -1152,8 +1222,6 @@ public class StackExchangeTopicGraph implements Graph {
 							if (vertsNotFoundByCenterToFinder.
 								 get(outVertexCopy.getVertexID())[1] == null) {
 								// found for the second time, so add to egonet
-								System.out.println(vertexID + " found "  +
-										outVertexCopy.getVertexID() + " for the second time");
 								egonet.addVertex(outVertexCopy);
 								// set as found second time by this user caller
 								vertsNotFoundByCenterToFinder.

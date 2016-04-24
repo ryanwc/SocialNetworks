@@ -15,12 +15,14 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import graph.StackExchangeTopicGraph;
+import graph.UserNode;
 
 public class GraphLoader {
 	
@@ -60,7 +62,7 @@ public class GraphLoader {
     /** Populates a StackExchangeTopicGraph with data from a Stack Exchange topic.
      * 
      * Uses the following XML files from a specified topic data dump bundle:
-     * Posts.xml, User.xml, Tags.xml, Comments.xml, Badges.xml
+     * Posts.xml, User.xml, Tags.xml, Comments.xml
      * @param graph the StackExchangeTopicGraph to populate
      * @param directoryWithXMLFiles the directory with all of a Stack Exchange
      * topic's data in the form of XML files found at the data dump.
@@ -98,8 +100,8 @@ public class GraphLoader {
 		graph.addAllEdges();
 	}
 	
-	public static NodeList getNodeListFromXMLFile(DocumentBuilder dBuilder,
-										          String xmlFilePath) {
+	public static Document getXMLFileDOM(DocumentBuilder dBuilder,
+										 String xmlFilePath) {
 		
 		// create a Java file from the XML file
 		File xmlFile = new File(xmlFilePath);
@@ -116,17 +118,17 @@ public class GraphLoader {
 	
 		xmlFileDOM.getDocumentElement().normalize();
 		
-		NodeList DOMNodeListParent = xmlFileDOM.getChildNodes();
-		NodeList DOMNodeList = DOMNodeListParent.item(0).getChildNodes();
-		
-		return DOMNodeList;
+		return xmlFileDOM;
 	}
 	
 	private static void loadUsersIntoGraph(StackExchangeTopicGraph graph,
 								          DocumentBuilder dBuilder,
 								          String userXMLFilePath) {
 		
-		NodeList users = getNodeListFromXMLFile(dBuilder, userXMLFilePath);
+		Document xmlFileDOM = getXMLFileDOM(dBuilder, userXMLFilePath);
+		
+		NodeList usersParent = xmlFileDOM.getChildNodes();
+		NodeList users = usersParent.item(0).getChildNodes();
 		
 		for (int i = 0; i < users.getLength(); i++) {
 			
@@ -146,7 +148,10 @@ public class GraphLoader {
 			  					         	  DocumentBuilder dBuilder,
 			  					         	  String postsXMLFilePath) {
 		
-		NodeList posts = getNodeListFromXMLFile(dBuilder, postsXMLFilePath);
+		Document xmlFileDOM = getXMLFileDOM(dBuilder, postsXMLFilePath);
+		
+		NodeList postsParent = xmlFileDOM.getChildNodes();
+		NodeList posts = postsParent.item(0).getChildNodes();
 		
 		for (int i = 0; i < posts.getLength(); i++) {
 			
@@ -160,8 +165,23 @@ public class GraphLoader {
 				// if the post is type 1 it is a question
 				if (Integer.parseInt(postType) == 1) {
 					
+					// if the question's user has been deleted,
+					// create a dummy user and add it to the graph
+					// and set the question's user
+					if (post.getAttributes().getNamedItem("OwnerUserId") == null) {
+					
+						UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+						graph.addVertex(user);
+						
+						Attr OwnerUserId = xmlFileDOM.createAttribute("OwnerUserId");
+						OwnerUserId.setValue(Integer.toString(user.getUserID()));
+						
+						post.getAttributes().setNamedItem(OwnerUserId);
+					}
+					
+					// only then add the question with the dummy user as author
 					graph.addVertex(graph.getUniqueVertexIDCounter(), 
-									post, StackExchangeTopicGraph.QUESTION);
+							post, StackExchangeTopicGraph.QUESTION);
 				}
 			}
 		}
@@ -172,7 +192,10 @@ public class GraphLoader {
 											DocumentBuilder dBuilder,
 											String postsXMLFilePath) {
 
-		NodeList posts = getNodeListFromXMLFile(dBuilder, postsXMLFilePath);
+		Document xmlFileDOM = getXMLFileDOM(dBuilder, postsXMLFilePath);
+		
+		NodeList postsParent = xmlFileDOM.getChildNodes();
+		NodeList posts = postsParent.item(0).getChildNodes();
 
 		for (int i = 0; i < posts.getLength(); i++) {
 
@@ -186,8 +209,23 @@ public class GraphLoader {
 				// if the post is type 2 it is an answer
 				if (Integer.parseInt(postType) == 2) {
 
+					// if the question's user has been deleted,
+					// create a dummy user and add it to the graph
+					// and set the answer's user
+					if (post.getAttributes().getNamedItem("OwnerUserId") == null) {
+					
+						UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+						graph.addVertex(user);
+						
+						Attr OwnerUserId = xmlFileDOM.createAttribute("OwnerUserId");
+						OwnerUserId.setValue(Integer.toString(user.getUserID()));
+						
+						post.getAttributes().setNamedItem(OwnerUserId);
+					}
+					
+					// only then add the answer with the dummy user as author
 					graph.addVertex(graph.getUniqueVertexIDCounter(), 
-									post, StackExchangeTopicGraph.ANSWER);
+							post, StackExchangeTopicGraph.ANSWER);
 				}
 			}
 		}
@@ -197,7 +235,10 @@ public class GraphLoader {
 											 DocumentBuilder dBuilder,
 											 String commentsXMLFilePath) {
 		
-		NodeList comments = getNodeListFromXMLFile(dBuilder, commentsXMLFilePath);
+		Document xmlFileDOM = getXMLFileDOM(dBuilder, commentsXMLFilePath);
+		
+		NodeList commentsParent = xmlFileDOM.getChildNodes();
+		NodeList comments = commentsParent.item(0).getChildNodes();
 		
 		for (int i = 0; i < comments.getLength(); i++) {
 			
@@ -206,6 +247,21 @@ public class GraphLoader {
 			// if node is type 1 it is a comment, so add it to the graph
 			if (comment.getNodeType() == 1) {
 				
+				// if the comment's user has been deleted,
+				// create a dummy user and add it to the graph
+				// and set the comments's user
+				if (comment.getAttributes().getNamedItem("UserId") == null) {
+				
+					UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+					graph.addVertex(user);
+					
+					Attr UserId = xmlFileDOM.createAttribute("UserId");
+					UserId.setValue(Integer.toString(user.getUserID()));
+					
+					comment.getAttributes().setNamedItem(UserId);
+				}
+				
+				// only then add the comment with the dummy user as author
 				graph.addVertex(graph.getUniqueVertexIDCounter(), 
 								comment, StackExchangeTopicGraph.COMMENT);
 			}
@@ -216,7 +272,10 @@ public class GraphLoader {
 										 DocumentBuilder dBuilder,
 										 String tagsXMLFilePath) {
 		
-		NodeList tags = getNodeListFromXMLFile(dBuilder, tagsXMLFilePath);
+		Document xmlFileDOM = getXMLFileDOM(dBuilder, tagsXMLFilePath);
+		
+		NodeList tagsParent = xmlFileDOM.getChildNodes();
+		NodeList tags = tagsParent.item(0).getChildNodes();
 		
 		for (int i = 0; i < tags.getLength(); i++) {
 			
