@@ -170,7 +170,7 @@ public class GraphLoader {
 					// and set the question's user
 					if (post.getAttributes().getNamedItem("OwnerUserId") == null) {
 					
-						UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+						UserNode user = graph.createDummyUser(graph.getUniqueVertexIDCounter());
 						graph.addVertex(user);
 						
 						Attr OwnerUserId = xmlFileDOM.createAttribute("OwnerUserId");
@@ -214,7 +214,7 @@ public class GraphLoader {
 					// and set the answer's user
 					if (post.getAttributes().getNamedItem("OwnerUserId") == null) {
 					
-						UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+						UserNode user = graph.createDummyUser(graph.getUniqueVertexIDCounter());
 						graph.addVertex(user);
 						
 						Attr OwnerUserId = xmlFileDOM.createAttribute("OwnerUserId");
@@ -252,7 +252,7 @@ public class GraphLoader {
 				// and set the comments's user
 				if (comment.getAttributes().getNamedItem("UserId") == null) {
 				
-					UserNode user = graph.createDummyUser(StackExchangeTopicGraph.USER);
+					UserNode user = graph.createDummyUser(graph.getUniqueVertexIDCounter());
 					graph.addVertex(user);
 					
 					Attr UserId = xmlFileDOM.createAttribute("UserId");
