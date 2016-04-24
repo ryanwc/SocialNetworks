@@ -1388,4 +1388,18 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		System.out.println("---------------------");
 	}
+	
+	//TODO: what should this print?
+	public void printStats() {
+		
+		System.out.println("********************");
+		System.out.println("Pertinent stats for graph " + topic + ":");
+		System.out.println("Num vertices: " + vertices.size());
+		System.out.println("Num users: " + users.size());
+		System.out.println("Num questions: " + questions.size());
+		System.out.println("Num answers: " + answers.size());
+		System.out.println("Num comments: " + comments.size());
+		System.out.println("Num tags: " + tagIDMap.size());
+		System.out.println("********************");
+	}
 }
