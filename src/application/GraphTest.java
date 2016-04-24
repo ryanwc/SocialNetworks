@@ -20,8 +20,12 @@ public class GraphTest {
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
 		//GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
-		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Buddhism");
-		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/buddhism.stackexchange.com/");
+		//StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Buddhism");
+		//GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/buddhism.stackexchange.com/");
+		
+		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
+		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
+		
 		
 		/* Print test
 		graph.printGraph();
@@ -52,8 +56,10 @@ public class GraphTest {
 		System.out.println("Biggest SCC has " + biggestSCC + " vertices");
 		//*/
 		
-		/* egonet test
-		((StackExchangeTopicGraph)graph.getEgonet(1)).printGraph();
+		///* egonet test
+		int center = 1;
+		System.out.println("Building egonet for vertex " + center);
+		((StackExchangeTopicGraph)graph.getEgonet(center)).printStats();
 		//*/
 		
 		//testGraph.printGraph();

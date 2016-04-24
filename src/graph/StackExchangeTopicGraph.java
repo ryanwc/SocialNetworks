@@ -625,49 +625,66 @@ public class StackExchangeTopicGraph implements Graph {
 	/** Adds all edges to the graph.
 	 * 
 	 * Should only be used if no edges have been added to the graph.
+	 * 
+	 * Works for egonets because it checks if the "to vertex" is
+	 * actually in the egonet.
 	 */
 	public void addAllEdges() {
 		
 		// QuestionNodes only know about their author (user)
 		for (QuestionNode question : questions.values()) {
 
-			UserNode author = users.get(question.getAuthorUserID());
-			
-			addEdge(question.getVertexID(), author.getVertexID());
-			addEdge(author.getVertexID(), question.getVertexID());
+			if (users.containsKey(question.getAuthorUserID())) {
+				
+				UserNode author = users.get(question.getAuthorUserID());
+				addEdge(question.getVertexID(), author.getVertexID());
+				addEdge(author.getVertexID(), question.getVertexID());
+			}
 		}
 		
 		// AnswerNodes know about their author (user) and parent question
 		for (AnswerNode answer : answers.values()) {
 			
-			UserNode author = users.get(answer.getAuthorUserID());
-			QuestionNode question = questions.get(answer.getParentQuestionPostID());
-			
-			addEdge(answer.getVertexID(), author.getVertexID());
-			addEdge(author.getVertexID(), answer.getVertexID());
-			
-			addEdge(answer.getVertexID(), question.getVertexID());
-			addEdge(question.getVertexID(), answer.getVertexID());
+			if (users.containsKey(answer.getAuthorUserID())) {
+				
+				UserNode author = users.get(answer.getAuthorUserID());
+				addEdge(answer.getVertexID(), author.getVertexID());
+				addEdge(author.getVertexID(), answer.getVertexID());
+			}
+
+			if (questions.containsKey(answer.getParentQuestionPostID())) {
+				
+				QuestionNode question = questions.get(answer.getParentQuestionPostID());
+				addEdge(answer.getVertexID(), question.getVertexID());
+				addEdge(question.getVertexID(), answer.getVertexID());
+			}
 		}
 		
 		// CommentNodes know about author (user) and parent question or answer
 		for (CommentNode comment : comments.values()) {
 			
-			UserNode author = users.get(comment.getAuthorUserID());
-			Post parentPost;
+			if (users.containsKey(comment.getAuthorUserID())) {
+				
+				UserNode author = users.get(comment.getAuthorUserID());
+				
+				addEdge(comment.getVertexID(), author.getVertexID());
+				addEdge(author.getVertexID(), comment.getVertexID());
+			}
+
+			Post parentPost = null;
 			
-			if (answers.keySet().contains(comment.getParentPostID())) {
+			if (answers.containsKey(comment.getParentPostID())) {
 				parentPost = answers.get(comment.getParentPostID());
 			}
 			else {
 				parentPost = questions.get(comment.getParentPostID());
 			}
 			
-			addEdge(comment.getVertexID(), author.getVertexID());
-			addEdge(author.getVertexID(), comment.getVertexID());
-			
-			addEdge(comment.getVertexID(), parentPost.getVertexID());
-			addEdge(parentPost.getVertexID(), comment.getVertexID());;
+			if (parentPost != null) {
+				
+				addEdge(comment.getVertexID(), parentPost.getVertexID());
+				addEdge(parentPost.getVertexID(), comment.getVertexID());
+			}
 		}
 		
 		// UserNodes don't know anything about other nodes
@@ -1111,6 +1128,14 @@ public class StackExchangeTopicGraph implements Graph {
 						" within " + topic); 
 		//TODO: Add tags to egonet
 		//TODO: Ensure egonet vertices have the egonet as topic, not parent graph's topic
+		//TODO: Should egonet include "spoke" comments and answers?  currently, the egonet
+		// will include answers and comments that "spoke" off of a vertex on a "main" path
+		// between users in the egonet (the "spoke" comments and answers do not lead to 
+		// a user). E.g., User1 and User2 are in the egonet.  User1 asks Question1 
+		// and User2 answers Question1 with Answer1.  A hundred other users, which are NOT
+		// in the egonet, make hundreds of other answers to Question1 and hundreds of
+		// comments to Question1, Answer1, and the other answers. These hundreds of 
+		// answers and comments are currently included in the egonet.
 		Vertex cVertParentGraph = vertices.get(center);
 		
 		// question: should egonet be different for a post?
