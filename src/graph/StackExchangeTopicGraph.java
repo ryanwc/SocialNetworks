@@ -8,6 +8,9 @@
  */
 package graph;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1426,5 +1429,37 @@ public class StackExchangeTopicGraph implements Graph {
 		System.out.println("Num comments: " + comments.size());
 		System.out.println("Num tags: " + tagIDMap.size());
 		System.out.println("********************");
+	}
+	
+	/** Converts the graph to linked list format.
+	 * 
+	 * An example graph with three vertices and four edges 
+	 * in linked list format:
+	 * 
+	 * 1 2 1
+	 * 1 3 1
+	 * 2 3 2
+	 * 3 1 0.5
+	 * . . .
+	 * 
+	 * Each line has the form {"fromVertexID" "toVertexID" "edgeWeight"}
+	 * which describes a weighted link between the vertices with specified IDs.
+	 * 
+	 * Assume unweighted edges; gives each edge a weight of 1.
+	 */
+	public void exportToLinkedListPlainText() throws IOException {
+		
+		FileWriter fileWriter = new FileWriter("data/stack_exchange/"+topic+"_LinkedList.txt", false);
+		PrintWriter printWriter = new PrintWriter(fileWriter);
+		
+		for (int vertexID : vertices.keySet()) {
+			for (int outEdgeVertID : vertices.get(vertexID).getOutEdges()) {
+			
+				printWriter.printf( "%s" + "%n" , vertexID + " " + outEdgeVertID + " " + "1");
+			}
+		}
+		
+		printWriter.close();
+		fileWriter.close();
 	}
 }

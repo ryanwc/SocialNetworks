@@ -1,5 +1,6 @@
 package application;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,7 +26,11 @@ public class GraphTest {
 		
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
-		
+		try {
+			graph.exportToLinkedListPlainText();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		/* Print test
 		graph.printGraph();
@@ -56,7 +61,7 @@ public class GraphTest {
 		System.out.println("Biggest SCC has " + biggestSCC + " vertices");
 		//*/
 		
-		///* egonet test
+		/* egonet test
 		int center = 1;
 		System.out.println("Building egonet for vertex " + center);
 		((StackExchangeTopicGraph)graph.getEgonet(center)).printStats();
