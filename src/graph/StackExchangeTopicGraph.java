@@ -43,12 +43,11 @@ public class StackExchangeTopicGraph implements Graph {
 	private Map<Integer,Vertex> vertices;
 	
 	private List<Graph> SCCList;
-	// should the communities be graphs like SCCs and egonets?
 	private Map<Integer,Map<Integer,StackExchangeTopicGraph>> levelToCommunities;
+	// should egonets have a map of vertID --> its egonet?
 	
-	// question: should these map from vertexID to specific node type,
-	// or from specific node type ID to node type?
-	// right now it's the latter so children can access parents from DOM data
+	// maps from specific node type ID (e.g., userID, postID) 
+	// so children can access parents from DOM data
 	private Map<Integer,QuestionNode> questions;
 	private Map<Integer,AnswerNode> answers;
 	private Map<Integer,CommentNode> comments;
@@ -63,9 +62,9 @@ public class StackExchangeTopicGraph implements Graph {
 	private Map<String,Tag> tagStringMap;
 	
 	// to enforce unique vertex IDs
-	// ensuring unique IDs like this seems fragile
 	// addVertex methods fail if the ID is already mapped and
 	// increment the counter after putting the vertex in the map
+	// (ensuring unique IDs like this seems fragile)
 	private int uniqueVertexIDCounter = 1;
 	
 	public StackExchangeTopicGraph() {
@@ -87,23 +86,15 @@ public class StackExchangeTopicGraph implements Graph {
 		this.tagIDMap = new HashMap<Integer,Tag>();
 		this.tagStringMap = new HashMap<String,Tag>();
 		
+		this.SCCList = new ArrayList<Graph>();
 		this.levelToCommunities = 
 				new HashMap<Integer,Map<Integer,StackExchangeTopicGraph>>();
-		// might be inefficient because list will keep doubling
-		this.SCCList = new ArrayList<Graph>();
 	}
 	
 	/** Add a vertex with dummy info to the graph.
 	 * 
-	 * This method will add a question, answer, comment, or user
-	 * vertex to the graph.  However, there will be no useful information
-	 * in the vertex, and the programmer must supply info elsewhere 
-	 * via the vertex's setters.
-	 * 
-	 * To populate the graph with a question, answer, comment, or user
-	 * vertex that has useful information, use the method
-	 * addVertex(int vertexID, Node vertexType), which will use the
-	 * given Node's data to populate the vertex's fields.
+	 * This method will add a question, answer, comment, or user vertex
+	 * to the graph with "default" values in all of the vertex's fields.
 	 * 
 	 * @see graph.Graph#addVertex(int)
 	 * 
@@ -170,7 +161,7 @@ public class StackExchangeTopicGraph implements Graph {
 	/** Add a vertex to the graph.
 	 * 
 	 * Adds an already-created question, answer, comment, or user node 
-	 * to the graph (puts it in the proper maps).
+	 * to the graph (and puts it in the proper maps).
 	 * 
 	 * @param vertex is the Vertex object to add
 	 */
@@ -247,11 +238,12 @@ public class StackExchangeTopicGraph implements Graph {
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
 	 * 
 	 * NOTE: This will throw a null pointer exception if the given Node
-	 * has no author.  uril.GraphLoader.populateStackExchangeTopicGraph() discards
-	 * questions with no author automatically.
+	 * has no author. You must add an author to the node before passing it as 
+	 * an argument (see util.GraphLoader.loadQuestionsIntoGraph()
+	 * for an example of how to do so).
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
-	 * @param node contains the question's data
+	 * @param node is the DOM node that contains the question's data
 	 */
 	public QuestionNode createQuestionFromDOMNode(int vertexID, Node node) {
 		
@@ -333,8 +325,8 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	/** Add a question to the graph.
 	 * 
-	 * Adds a question as a vertex to the graph and sets
-	 * that vertex's state (e.g., view count).
+	 * Adds a question as a vertex to the graph (and adds it
+	 * to the question map).
 	 * 
 	 * @param question is the QuestionNode to add to the graph
 	 */
@@ -353,11 +345,11 @@ public class StackExchangeTopicGraph implements Graph {
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
 	 * 
 	 * NOTE: This will throw a null pointer exception if the given Node
-	 * has no author.  uril.GraphLoader.populateStackExchangeTopicGraph() discards
-	 * questions with no author automatically.
+	 * has no author.  See util.GraphLoader.loadAnswersIntoGraph() for an
+	 * example of how to add an author to an answer DOM node.
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
-	 * @param node contains the answer's data
+	 * @param node is the DOM node that contains the answer's data
 	 */
 	public AnswerNode createAnswerFromDOMNode(int vertexID, Node node) {
 		
@@ -425,8 +417,12 @@ public class StackExchangeTopicGraph implements Graph {
 	 * of a StackExchange comment per the schema described at:
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
 	 * 
+	 * NOTE: This will throw a null pointer exception if the given Node
+	 * has no author.  See util.GraphLoader.loadAnswersIntoGraph() for an
+	 * example of how to add an author to an answer DOM node.
+	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
-	 * @param node contains the comments's data
+	 * @param node is a DOM node that contains the comments's data
 	 */
 	public CommentNode createCommentFromDOMNode(int vertexID, Node node) {
 		
@@ -481,7 +477,7 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	/** Add a CommentNode as a vertex to the graph.
 	 * 
-	 * @param CommentNode is the node to add to the graph
+	 * @param comment is the CommentNode to add to the graph
 	 */
 	public void addCommentToGraph(CommentNode comment) {
 		
@@ -498,7 +494,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
 	 * 
 	 * @param vertexID is the unique id of the vertex in this graph
-	 * @param node contains the user's data
+	 * @param node is the DOM node that contains the user's data
 	 */
 	public UserNode createUserFromDOMNode(int vertexID, Node node) {
 		
@@ -546,7 +542,7 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	/** Add a UserNode as a vertex to the graph.
 	 * 
-	 * @param the UserNode to add to the graph
+	 * @param user is the UserNode to add to the graph
 	 */
 	public void addUserToGraph(UserNode user) {
 		
@@ -562,7 +558,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * of a StackExchange tag per the schema described at:
 	 * http://meta.stackexchange.com/questions/2677/database-schema-documentation-for-the-public-data-dump-and-sede
 	 * 
-	 * @param node contains the tag's data
+	 * @param node is the DOM node that contains the tag's data
 	 */
 	public Tag createTagFromDOMNode(Node node) {
 		
@@ -637,12 +633,12 @@ public class StackExchangeTopicGraph implements Graph {
 			}
 		}
 		// no extra work to do if fromVertex is a CommentNode
-		// 
 	}
 	
 	/** Adds all edges to the graph.
 	 * 
-	 * Should only be used if no edges have been added to the graph.
+	 * Should only be used if no edges have been added to the graph, or else
+	 * unpredicatble results will occur.
 	 * 
 	 * Works for subgraphs (egonets and communities) because it checks if the
 	 * "to vertex" is actually in the subgraph before adding the edge.
@@ -714,6 +710,8 @@ public class StackExchangeTopicGraph implements Graph {
 	 * One example use of this method is creating a dummy user to act as 
 	 * the parent of posts whose real user has been deleted from the
 	 * Stack Exchange community.
+	 * 
+	 * Does not add the create UserNode to the graph.
 	 * 
 	 * @param vertexID is the id of the vertex in this graph
 	 * @return a new UserNode with dummy data
@@ -864,6 +862,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * This method may break if there is a '<' or '>' in the actual tag name.
 	 * 
 	 * @param tagsString is the raw tags String from the DOM
+	 * @return a List<String> with each item in the list a tag
 	 */
 	public List<String> parseRawTags(String tagsString) {
 		
@@ -1025,6 +1024,15 @@ public class StackExchangeTopicGraph implements Graph {
 						  int root, Set<Integer> visited,
 						  Stack<Integer> finished, boolean secondPass,
 						  StackExchangeTopicGraph SCC) {
+		
+		if (secondPass == false && SCC != null) {
+			throw new IllegalArgumentException("SCC should be null "
+					+ "on first pass");
+		}
+		else if (secondPass == true && SCC == null) {
+			throw new IllegalArgumentException("SCC should not be null "
+					+ "on second pass");
+		}
 
 		visited.add(vertexID);
 		
@@ -1066,7 +1074,6 @@ public class StackExchangeTopicGraph implements Graph {
 	 * Returns a new graph.  The new graph is identical to the old graph
 	 * if the graph is undirected.
 	 * 
-	 * @param graph the graph to be transposed
 	 * @return a new StackExchangeTopicGraph with all original 
 	 * graph edges reversed.
 	 */
@@ -1133,7 +1140,6 @@ public class StackExchangeTopicGraph implements Graph {
 	 * usefulness, etc) as in the parent graph.
 	 * 
 	 * @param center is the vertex at the center of the egonet
-	 * 
 	 * @return the egonet centered at center, including center
 	 * 
 	 * @see graph.Graph#getEgonet(int)
@@ -1211,15 +1217,21 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * @param parent the StackExchangeTopicGraph that contains the egonet
 	 * @param egonet the StackExchangeTopicGraph that represents the egonet
-	 * @param vertexID the vertex from which to do DFS
-	 * @param foundByOtherUser is the set of vertex IDs found by a call to
-	 * DFSEgoNet starting at a user that is not the center of the ego net.
-	 * Should be null if this call starts at the center of the egonet.
+	 * @param userDFSInitiatorVertIS is the vertex id of the UserNode that
+	 * initiated the original call to DFS
+	 * @param vertexID the vertex from which to do this DFS
+	 * @param vertsNotFoundByCenterToFinder is a map from
+	 * vertID --> {firstFinderVertID, secondFinderVertID}, where vertID is
+	 * the vertex id of a vertex that was found by a DFS call starting at a
+	 * non-center user, firstFinderVertID is the vertex id of the first
+	 * non-center user who "found" the vertex (if any), and secondFinderVertID
+	 * is the vertex id of the second non-center user who "found" the vertex
+	 * (if any)
 	 */
-	public void DFSEgoNet(StackExchangeTopicGraph parent, 
-						  StackExchangeTopicGraph egonet, 
-						  int userDFSInitiatorVertID, int vertexID, 
-						  Map<Integer,Integer[]> vertsNotFoundByCenterToFinder) {
+	private void DFSEgoNet(StackExchangeTopicGraph parent, 
+				 		   StackExchangeTopicGraph egonet, 
+						   int userDFSInitiatorVertID, int vertexID, 
+						   Map<Integer,Integer[]> vertsNotFoundByCenterToFinder) {
 		
 		Vertex vertex = parent.getVertices().get(vertexID);
 		List<Integer> outVertexIDs = vertex.getOutEdges();
@@ -1301,18 +1313,24 @@ public class StackExchangeTopicGraph implements Graph {
 	 * download and described here:
 	 * https://perso.uclouvain.be/vincent.blondel/research/louvain.html
 	 * 
-	 * @return {map: [Integer --> map: [Integer --> Set<Integer>]]}, 
+	 * This method's helper methods interface with C++ code found at the link
+	 * above.  Instructions to ensure all files are in the correct directory
+	 * should be found at this project's GitHub page
+	 * (https://github.com/ryanwc/SocialNetworks)
+	 * 
+	 * @return {map Integer --> {map Integer --> StackExchangeTopicGraph}}, 
 	 * with each key in the upper map corresponding to a level of graph 
 	 * hierarchy resulting from execution of the Louvain method, each key 
 	 * in the lower map corresponding to a community within that level, and 
-	 * each Integer in the final value set containing the vertex ids comprising
-	 * a numbered community found at that level of the hierarchy.  
-	 * 0 is the "leaf" level of the hierarchy, which means that for a return 
-	 * value returnMap, returnMap.get(0) will return a Map<Integer,Set<Integer>>
-	 * size equal to the number of vertices in this graph, with each Integer
-	 * key getting a Set<Integer> containing only itself. The key for the 
-	 * "highest" level of the hierarchy will be returnMap(returnMap.size()-1), 
-	 * which will return a Map<Integer,Set<Integer>> with size equal the number 
+	 * each StackExchangeTopicGraph in the final value set corresponding to
+	 * a community found at that level of the hierarchy. 0 is the "leaf" level 
+	 * of the hierarchy, which means that for a return value returnMap, 
+	 * returnMap.get(0) will return a Map<Integer,StackExchangeTopicGraph>>
+	 * of size equal to the number of vertices in this graph, with each Integer
+	 * key getting a StackExchangeTopicGraph containing only itself. 
+	 * The key for the "highest" level of the hierarchy will be 
+	 * returnMap(returnMap.size()-1), which will return a 
+	 * Map<Integer,StackExchangeTopicGraph> with size equal the number 
 	 * of communities at which the modularity score calculated by the Louvain 
 	 * method no longer increased from the last level.
 	 * @throws IOException 
@@ -1332,6 +1350,14 @@ public class StackExchangeTopicGraph implements Graph {
 		return levelToCommunities;
 	}
 	
+	/** Run the Louvain method for detecting communities of the given file.
+	 * 
+	 * Go to the following link to read about and download the freely 
+	 * available C++ for the Louvain method:
+	 * https://perso.uclouvain.be/vincent.blondel/research/louvain.html
+	 * 
+	 * @throws IOException 
+	 */
 	public void runLouvain(File linkedListFile) throws IOException {
 		
 		File communityMetadata = new File("Louvain_CPlusPlus/"+topic+"communityHierarchyInfo.txt");
@@ -1395,7 +1421,19 @@ public class StackExchangeTopicGraph implements Graph {
 		buildLevelToCommunityMap(levelMappings);
 	}
 	
-	private void buildLevelToCommunityMap(File levelMappings) throws IOException {
+	/** Populate this graph's communities with the file output
+	 * from running the Louvain method.
+	 * 
+	 * Go to the following link to read about and download the freely 
+	 * available C++ for the Louvain method:
+	 * https://perso.uclouvain.be/vincent.blondel/research/louvain.html
+	 * 
+	 * @param levelMappings is the file that contains all of the mappings
+	 * from vertex to community for each level of the hierarchy discovered
+	 * by running the Louvain method on this graph.
+	 * @throws IOException 
+	 */
+	public void buildLevelToCommunityMap(File levelMappings) throws IOException {
 		
 		InputStream levelMappingsIn = new FileInputStream(levelMappings.getAbsolutePath()); 
 		BufferedReader levelMappingsReader = new BufferedReader(new InputStreamReader(levelMappingsIn));
@@ -1530,12 +1568,13 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 	}
 	
-	/** Return a version of the map that is more friendly to other systems.
-	 * 
-	 * Returns a HashMap of all vertexIDs v in the graph --> set of vertexIDs 
-	 * s reachable from v via a directed edge.
+	/** Return a version of the map that is potentially more friendly 
+	 * to other systems.
 	 * 
 	 * The returned representation ignores edge weights and multi-edges.
+	 * 
+	 * @return a HashMap of all vertexIDs v in the graph --> set of vertexIDs 
+	 * reachable from v via a directed edge.
 	 * 
 	 * @see graph.Graph#exportGraph()
 	 */
@@ -1596,6 +1635,9 @@ public class StackExchangeTopicGraph implements Graph {
 	}
 	
 	//TODO: what should this print?
+	/** Print basic stats about the graph.
+	 * 
+	 */
 	public void printStats() {
 		
 		System.out.println("********************");
@@ -1610,6 +1652,9 @@ public class StackExchangeTopicGraph implements Graph {
 	}
 	
 	/** Converts the graph to linked list format.
+	 * 
+	 * Required format for processing with the Louvain method found
+	 * at https://perso.uclouvain.be/vincent.blondel/research/louvain.html
 	 * 
 	 * An example graph with three vertices and four edges 
 	 * in linked list format:
@@ -1631,7 +1676,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * still processes the vertex.  In the context of a Stack Exchange graph, 
 	 * it is actually quite common for a vertex to have no out edges, as many
 	 * users register but never make any posts.
-	 * @return an abstract file with linked list representation of the graph 
+	 * @return a file with linked list representation of the graph 
 	 */
 	public File exportToLinkedListPlainText() throws IOException {
 		
