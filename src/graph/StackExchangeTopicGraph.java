@@ -8,14 +8,24 @@
  */
 package graph;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.Stack;
 
@@ -31,7 +41,10 @@ public class StackExchangeTopicGraph implements Graph {
 
 	private String topic;
 	private Map<Integer,Vertex> vertices;
+	
 	private List<Graph> SCCList;
+	// should the communities be graphs like SCCs and egonets?
+	private Map<Integer,Map<Integer,StackExchangeTopicGraph>> levelToCommunities;
 	
 	// question: should these map from vertexID to specific node type,
 	// or from specific node type ID to node type?
@@ -74,6 +87,8 @@ public class StackExchangeTopicGraph implements Graph {
 		this.tagIDMap = new HashMap<Integer,Tag>();
 		this.tagStringMap = new HashMap<String,Tag>();
 		
+		this.levelToCommunities = 
+				new HashMap<Integer,Map<Integer,StackExchangeTopicGraph>>();
 		// might be inefficient because list will keep doubling
 		this.SCCList = new ArrayList<Graph>();
 	}
@@ -629,8 +644,8 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * Should only be used if no edges have been added to the graph.
 	 * 
-	 * Works for egonets because it checks if the "to vertex" is
-	 * actually in the egonet.
+	 * Works for subgraphs (egonets and communities) because it checks if the
+	 * "to vertex" is actually in the subgraph before adding the edge.
 	 */
 	public void addAllEdges() {
 		
@@ -1280,30 +1295,183 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 	}
 	
-	/** Detect this graph's communities.
+	/** Detect communities in this graph.
 	 * 
-	 * @param numCommunities is the number of communities to separate this 
-	 * StackExchangeTopicGraph into. [Pass null value to find all communities]
-	 * @return a list of graphs, each representing one of this 
-	 * graph's communities
+	 * Uses the Louvain method for detecting communities, freely available for 
+	 * download and described here:
+	 * https://perso.uclouvain.be/vincent.blondel/research/louvain.html
+	 * 
+	 * @return {map: [Integer --> map: [Integer --> Set<Integer>]]}, 
+	 * with each key in the upper map corresponding to a level of graph 
+	 * hierarchy resulting from execution of the Louvain method, each key 
+	 * in the lower map corresponding to a community within that level, and 
+	 * each Integer in the final value set containing the vertex ids comprising
+	 * a numbered community found at that level of the hierarchy.  
+	 * 0 is the "leaf" level of the hierarchy, which means that for a return 
+	 * value returnMap, returnMap.get(0) will return a Map<Integer,Set<Integer>>
+	 * size equal to the number of vertices in this graph, with each Integer
+	 * key getting a Set<Integer> containing only itself. The key for the 
+	 * "highest" level of the hierarchy will be returnMap(returnMap.size()-1), 
+	 * which will return a Map<Integer,Set<Integer>> with size equal the number 
+	 * of communities at which the modularity score calculated by the Louvain 
+	 * method no longer increased from the last level.
+	 * @throws IOException 
 	 */
-	public List<Graph> getCommunities(Integer numCommunities) {
+	public Map<Integer,Map<Integer,StackExchangeTopicGraph>> detectAndGetCommunities() throws IOException {
 		
-		ArrayList<Graph> communities = new ArrayList<Graph>();
-	/*
-		- Compute “betweenness” of all edges (i.e., calculate shortest path between every pair of vertices and count how many times each edge appears in a path)
-			- for each node v (O(v)) (linear at this point)
-			- bfs of graph starting at v (O(|V|+|E|)) (quadratic at this point)
-			- compute # of shortest paths from v to each other node
-			- distribute flow to edges along these paths (increment counter for each edge in each shortest path?)
-		- Remove edge(s) of highest betweenness
-		- Repeat with graph subsections until there are no more edges, or until have separated graph into desired number of components (O(|E|)) (cubic at this point)
-	*/
-		return communities;
+		File linkedListFile = null;
+		
+		try {
+			linkedListFile = exportToLinkedListPlainText();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		runLouvain(linkedListFile);
+
+		return levelToCommunities;
+	}
+	
+	public void runLouvain(File linkedListFile) throws IOException {
+		
+		File communityMetadata = new File("Louvain_CPlusPlus/"+topic+"communityHierarchyInfo.txt");
+		String levelMetadataMarker = "**** starting level info ****";
+		
+		// discover communities and write metadata to text file
+		ProcessBuilder buildCommunityHierarchy = new ProcessBuilder("bash", 
+				"-c", "cd Louvain_CPlusPlus ; "
+						+ "./convert -i '" + linkedListFile.getAbsolutePath() + "' -o graph.bin -r ; "
+						+ "./community graph.bin -l -1 -v > graph.tree ; "
+						+ "echo '" + levelMetadataMarker + "' ; "
+						+ "./hierarchy graph.tree");
+		buildCommunityHierarchy.redirectErrorStream(true);
+		buildCommunityHierarchy.redirectOutput(Redirect.to(communityMetadata));
+		
+		buildCommunityHierarchy.start();
+
+		// read output to determine number of levels
+		InputStream metaDataIn = new FileInputStream(communityMetadata.getAbsolutePath());
+		Scanner metaDataScanner = new Scanner(metaDataIn);
+        
+        String metaDataLine;
+        int levels = -1;
+        boolean inLevelMetaData = false;
+        
+        // probably a better way to do this, like reading just the last line
+        // to get highest level number
+        while (metaDataScanner.hasNextLine()) {
+        	
+        	metaDataLine = metaDataScanner.nextLine();
+        	
+        	if (inLevelMetaData) {
+        		levels++;
+        	}
+        	else {
+        		if (metaDataLine.equals(levelMetadataMarker)) {
+        			inLevelMetaData = true;
+        		}
+        	}
+        }
+        
+        metaDataScanner.close();
+        
+        // write all level mappings to a single file
+        // (a single level mapping contains a line for each vertex 
+        // with the tuple "vertexID communityNum")
+        ProcessBuilder writeLevelMapping;
+		File levelMappings = new File("Louvain_CPlusPlus/"+topic+"LevelMappings.txt");
+		levelMappings.delete();
+        
+		for (int level = 0; level < levels; level++) {
+       
+			writeLevelMapping = 
+    				new ProcessBuilder("bash", "-c", 
+    						"cd Louvain_CPlusPlus ; "
+    							+ "./hierarchy graph.tree -l " + level + " >> " + levelMappings.getName());
+    		writeLevelMapping.redirectErrorStream(true);
+    		writeLevelMapping.start();
+        }
+		
+		buildLevelToCommunityMap(levelMappings);
+	}
+	
+	private void buildLevelToCommunityMap(File levelMappings) throws IOException {
+		
+		InputStream levelMappingsIn = new FileInputStream(levelMappings.getAbsolutePath()); 
+		BufferedReader levelMappingsReader = new BufferedReader(new InputStreamReader(levelMappingsIn));
+		
+		String vertexMapping = "";
+		int level = 0;
+		int lineCounter = 0;
+		int vertexID;
+		int louvainVertexID;
+		int communityID;
+		StackExchangeTopicGraph community;
+		
+		Map<Integer,StackExchangeTopicGraph> levelCommunities = 
+				new HashMap<Integer,StackExchangeTopicGraph>();
+		levelToCommunities.put(level, levelCommunities);
+		
+		Object[] sortedOriginalIDs = vertices.keySet().toArray();
+		Arrays.sort(sortedOriginalIDs);
+		
+		while ((vertexMapping = levelMappingsReader.readLine()) != null) {
+			
+			String[] vertexAndCommunity = vertexMapping.split(" ");
+			// need to add one because the Louvain method indexes at zero
+			// will not work for egonets, SCCs, or for other graphs where 
+			// vertexIDs are not guaranteed to be numbered [1-numVertices]
+			louvainVertexID = Integer.parseInt(vertexAndCommunity[0]);
+			vertexID = (int)sortedOriginalIDs[louvainVertexID];
+			communityID = Integer.parseInt(vertexAndCommunity[1]) + 1;
+			
+			Vertex parentVertex = vertices.get(vertexID);
+			Vertex vertexCopy = parentVertex.makeCopy();
+			
+			if (levelCommunities.containsKey(communityID)) {
+				
+				community = levelCommunities.get(communityID);
+			}
+			else {
+				community =
+						new StackExchangeTopicGraph("Community " + communityID +
+								" of level " + level + " of " + topic);
+				levelCommunities.put(communityID, community);
+			}
+			
+			community.addVertex(vertexCopy);
+			
+			lineCounter++;
+			
+			// done with this level
+			System.out.println(lineCounter);
+			if (lineCounter % vertices.size() == 0) {
+				
+				System.out.println("done with this level");
+				// is it better to have new var for community here?
+				// add all edges to each community at this level
+				for (int communityNum : levelCommunities.keySet()) {
+					
+					community = levelCommunities.get(communityNum);
+					community.addAllEdges();
+				}
+				
+				level++;
+				levelCommunities = new HashMap<Integer,StackExchangeTopicGraph>();
+				levelToCommunities.put(level, levelCommunities);
+			}
+		}
+		
+		levelMappingsReader.close();
 	}
 	
 	public String getTopic() {
 		return topic;
+	}
+	
+	public Map<Integer,Map<Integer,StackExchangeTopicGraph>> getCommunities() {
+
+		return levelToCommunities;	
 	}
 	
 	public void setTopic(String topic) {
@@ -1350,6 +1518,16 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	public void setUniqueVertexIDCounter(int uniqueVertexIDCounter) {
 		this.uniqueVertexIDCounter = uniqueVertexIDCounter;
+	}
+	
+	public List<Graph> getSCCList() {
+		
+		if (SCCList.size() < 1) {
+			return getSCCs();
+		}
+		else {
+			return SCCList;
+		}
 	}
 	
 	/** Return a version of the map that is more friendly to other systems.
@@ -1436,30 +1614,55 @@ public class StackExchangeTopicGraph implements Graph {
 	 * An example graph with three vertices and four edges 
 	 * in linked list format:
 	 * 
-	 * 1 2 1
-	 * 1 3 1
-	 * 2 3 2
-	 * 3 1 0.5
-	 * . . .
+	 * 1 2
+	 * 1 3
+	 * 2 3
+	 * 3 1
+	 * . .
 	 * 
-	 * Each line has the form {"fromVertexID" "toVertexID" "edgeWeight"}
-	 * which describes a weighted link between the vertices with specified IDs.
+	 * Each line has the form {"fromVertexID" "toVertexID"}
+	 * which indicates an edge between the vertices with specified IDs.
 	 * 
-	 * Assume unweighted edges; gives each edge a weight of 1.
+	 * Discards edge weights, if any.
+	 * 
+	 * If a vertex has no out edges, adds one out edge to itself (a loop) so
+	 * the edge is included in a graph.  This is so the Louvain method found at
+	 * https://perso.uclouvain.be/vincent.blondel/research/louvain.html
+	 * still processes the vertex.  In the context of a Stack Exchange graph, 
+	 * it is actually quite common for a vertex to have no out edges, as many
+	 * users register but never make any posts.
+	 * @return an abstract file with linked list representation of the graph 
 	 */
-	public void exportToLinkedListPlainText() throws IOException {
+	public File exportToLinkedListPlainText() throws IOException {
 		
+		File linkedListFile;
 		FileWriter fileWriter = new FileWriter("data/stack_exchange/"+topic+"_LinkedList.txt", false);
 		PrintWriter printWriter = new PrintWriter(fileWriter);
 		
-		for (int vertexID : vertices.keySet()) {
-			for (int outEdgeVertID : vertices.get(vertexID).getOutEdges()) {
+		// to play nicely with Louvain method, which requires re-indexing to 0
+		// we are now guaranteed an ascending ordering of vertex IDs
+		// so we can convert back from index 0 ids even if the graph's vertex ids
+		// do not follow [1-numVertices], without touching the Louvain code.
+		Object[] sortedIDs = vertices.keySet().toArray();
+		Arrays.sort(sortedIDs);
+		
+		for (int i = 0; i < sortedIDs.length; i++) {
 			
-				printWriter.printf( "%s" + "%n" , vertexID + " " + outEdgeVertID + " " + "1");
+			List<Integer> outEdges = vertices.get(sortedIDs[i]).getOutEdges();
+			
+			if (outEdges.size() < 1) {
+				printWriter.printf( "%s" + "%n" , sortedIDs[i] + " " + sortedIDs[i]);
+			}
+			for (int outEdgeVertID : outEdges) {
+			
+				printWriter.printf( "%s" + "%n" , sortedIDs[i] + " " + outEdgeVertID);
 			}
 		}
 		
 		printWriter.close();
 		fileWriter.close();
+		
+		linkedListFile = new File("data/stack_exchange/"+topic+"_LinkedList.txt");
+		return linkedListFile;
 	}
 }

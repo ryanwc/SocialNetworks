@@ -1,8 +1,10 @@
 package application;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import graph.CapGraph;
 import graph.Graph;
@@ -26,10 +28,21 @@ public class GraphTest {
 		
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
+		
 		try {
-			graph.exportToLinkedListPlainText();
+			graph.detectAndGetCommunities();
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+		
+		for (int level : graph.getCommunities().keySet()) {
+			
+			Map<Integer,StackExchangeTopicGraph> communityMap = graph.getCommunities().get(level);
+			
+			for (int communityID : communityMap.keySet()) {
+				
+				communityMap.get(communityID).printGraph();
+			}
 		}
 		
 		/* Print test
