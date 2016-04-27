@@ -900,7 +900,6 @@ public class StackExchangeTopicGraph implements Graph {
 	@Override
 	public List<Graph> getSCCs() {
 		//TODO: add tags to each SCC
-		//TODO: ensure each SCC has SCC as topic, not parent graph
 		Stack<Integer> vertexIDStack = new Stack<Integer>();
 		
 		for (int vertexID : vertices.keySet()) {
@@ -955,7 +954,10 @@ public class StackExchangeTopicGraph implements Graph {
 					SCC = new StackExchangeTopicGraph("SCC with Parent '" + 
 								topic + "' and " + "Root " + vertexToVisitID);
 					
-					addVertexToSCC(graph, vertexToVisitID, SCC);
+					Vertex vertexSuper = graph.vertices.get(vertexToVisitID);
+					Vertex vertexSCC = vertexSuper.makeCopy();
+					vertexSCC.setName(vertexSCC.getName() + " in " + SCC.getTopic());
+					SCC.addVertex(vertexSCC);
 				}
 
 				singleDFS(graph, vertexToVisitID, vertexToVisitID, 
@@ -972,26 +974,6 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 
 		return finished;
-	}
-	
-	/** Add a vertex in a graph to an SCC of that graph.
-	 * 
-	 * Helper method to ensure a graph does not share any objects
-	 * with its SCCs while keeping all object IDs in the SCC equal to
-	 * the corresponding object IDs in the graph.
-	 * 
-	 * @param graph is the StackExchangeTopicGraph that contains the vertex
-	 * and SCC
-	 * @param vertexToAddID is the int ID of the vertex to add to the SCC
-	 * @param SCC is the StackExchangeTopicGraph that represents a graph SCC
-	 */
-	private void addVertexToSCC(StackExchangeTopicGraph graph, 
-								int vertexToAddID, 
-								StackExchangeTopicGraph SCC) {
-		
-		Vertex vertexSuper = graph.vertices.get(vertexToAddID);
-		Vertex vertexSCC = vertexSuper.makeCopy();
-		SCC.addVertex(vertexSCC);
 	}
 	
 	/** Do a depth-first search as a helper method for discovering SCCs.
@@ -1041,6 +1023,7 @@ public class StackExchangeTopicGraph implements Graph {
 		if (secondPass && !SCC.getVertices().keySet().contains(vertexID)) {
 
 			Vertex vertexCopy = vertex.makeCopy();
+			vertexCopy.setName(vertexCopy.getName() + " in " + SCC.getTopic());
 			SCC.addVertex(vertexCopy);
 		}
 		
@@ -1055,6 +1038,8 @@ public class StackExchangeTopicGraph implements Graph {
 					!SCC.getVertices().keySet().contains(neighborID)) {
 
 					Vertex neighborCopy = neighbor.makeCopy();
+					neighborCopy.setName(neighborCopy.getName() 
+							+ " in " + SCC.getTopic());
 					SCC.addVertex(neighborCopy);
 				}
 			}
@@ -1091,6 +1076,8 @@ public class StackExchangeTopicGraph implements Graph {
 			if (!transposeVertices.keySet().contains(vertexID)) {
 				
 				Vertex vertexCopy = vertex.makeCopy();
+				vertexCopy.setName(vertexCopy.getName() 
+						+ " in " + transposeGraph.getTopic());
 				transposeGraph.addVertex(vertexCopy);
 			}
 			
@@ -1105,6 +1092,8 @@ public class StackExchangeTopicGraph implements Graph {
 				if (!transposeVertices.keySet().contains(oldOutVertID)) {
 					
 					Vertex oldOutVertCopy = oldOutVert.makeCopy();
+					oldOutVert.setName(oldOutVert.getName()
+							+ " in " + transposeGraph.getTopic());
 					transposeGraph.addVertex(oldOutVertCopy);
 				}
 			}
@@ -1151,7 +1140,6 @@ public class StackExchangeTopicGraph implements Graph {
 				new StackExchangeTopicGraph("Egonet for vertex " + center + 
 						" within " + topic); 
 		//TODO: Add tags to egonet
-		//TODO: Ensure egonet vertices have the egonet as topic, not parent graph's topic
 		//TODO: Should egonet include "spoke" comments and answers?  currently, the egonet
 		// will include answers and comments that "spoke" off of a vertex on a "main" path
 		// between users in the egonet (the "spoke" comments and answers do not lead to 
@@ -1173,6 +1161,8 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		// add the center to the egonet
 		Vertex cVertParentGraphCopy = cVertParentGraph.makeCopy();
+		cVertParentGraphCopy.setName(cVertParentGraphCopy.getName()
+				+ " in " + egonet.getTopic());
 		egonet.addVertex(cVertParentGraphCopy);
 		
 		// populate egonet with vertices and edges up to
@@ -1240,6 +1230,8 @@ public class StackExchangeTopicGraph implements Graph {
 			
 			Vertex outVertex = parent.getVertices().get(outVertexID);
 			Vertex outVertexCopy = outVertex.makeCopy();
+			outVertexCopy.setName(outVertexCopy.getName()
+					+ " in " + egonet.getTopic());
 
 			// if this vertex is not already in the egonet
 			if (!egonet.getVertices().containsKey(outVertexCopy.getVertexID())) {
@@ -1463,9 +1455,6 @@ public class StackExchangeTopicGraph implements Graph {
 			vertexID = (int)sortedOriginalIDs[louvainVertexID];
 			communityID = Integer.parseInt(vertexAndCommunity[1]) + 1;
 			
-			Vertex parentVertex = vertices.get(vertexID);
-			Vertex vertexCopy = parentVertex.makeCopy();
-			
 			if (levelCommunities.containsKey(communityID)) {
 				
 				community = levelCommunities.get(communityID);
@@ -1476,6 +1465,11 @@ public class StackExchangeTopicGraph implements Graph {
 								" of level " + level + " of " + topic);
 				levelCommunities.put(communityID, community);
 			}
+			
+			Vertex parentVertex = vertices.get(vertexID);
+			Vertex vertexCopy = parentVertex.makeCopy();
+			vertexCopy.setName(vertexCopy.getName()
+					+ " in " + community.getTopic());
 			
 			community.addVertex(vertexCopy);
 			
