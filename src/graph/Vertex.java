@@ -6,7 +6,9 @@
 package graph;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Vertex {
 
@@ -26,6 +28,9 @@ public class Vertex {
 	
 	private List<Integer> outEdges;
 	
+	// map from hierarchy level to id of community this vertex is a member of
+	private Map<Integer,Integer> communityMembership;
+	
 	public Vertex(int vertexID) {
 		
 		this(vertexID, Integer.toString(vertexID));
@@ -37,6 +42,7 @@ public class Vertex {
 		this.name = name;
 		
 		this.outEdges = new ArrayList<Integer>();
+		this.communityMembership = new HashMap<Integer,Integer>();
 	}
 	
 	/** Create an edge between this vertex and another vertex.
@@ -89,6 +95,11 @@ public class Vertex {
 	public void setName(String name) {
 		
 		this.name = name;
+	}
+	
+	public Map<Integer,Integer> getCommunityMembership() {
+		
+		return communityMembership;
 	}
 	
 	public String toString() {
