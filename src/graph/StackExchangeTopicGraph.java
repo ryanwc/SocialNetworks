@@ -335,6 +335,12 @@ public class StackExchangeTopicGraph implements Graph {
 		vertices.put(question.getVertexID(), question);
 		questions.put(question.getPostID(), question);
 		
+		for (int tagID : question.getTags()) {
+			
+			Tag tag = tagIDMap.get(tagID);
+			tag.setThisGraphTagCount(tag.getThisGraphTagCount()+1);
+		}
+		
 		uniqueVertexIDCounter++;
 	}
 	
@@ -575,7 +581,7 @@ public class StackExchangeTopicGraph implements Graph {
 		int tagCount = Integer.parseInt(nodeAttributes.
 				getNamedItem("Count").getNodeValue());
 		
-		Tag tag = new Tag(topic, tagID, tagName, tagCount);
+		Tag tag = new Tag(topic, tagID, tagName, tagCount, 0);
 		
 		return tag;
 	}
@@ -954,6 +960,15 @@ public class StackExchangeTopicGraph implements Graph {
 					SCC = new StackExchangeTopicGraph("SCC with Parent '" + 
 								topic + "' and " + "Root " + vertexToVisitID);
 					
+					// make a copy of each tag in the parent graph
+					// add it to the SCC but with 0 count for the SCC
+					for (int tagID : graph.getTagIDMap().keySet()) {
+						
+						Tag tag = graph.getTagIDMap().get(tagID);
+						Tag tagCopy = tag.makeCopy();
+						SCC.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+					}
+					
 					Vertex vertexSuper = graph.vertices.get(vertexToVisitID);
 					Vertex vertexSCC = vertexSuper.makeCopy();
 					vertexSCC.setName(vertexSCC.getName() + " in " + SCC.getTopic());
@@ -1067,6 +1082,16 @@ public class StackExchangeTopicGraph implements Graph {
 		StackExchangeTopicGraph transposeGraph = 
 				new StackExchangeTopicGraph(topic + " (Transpose)");
 		
+		// make a complete copy of each tag in the parent graph
+		// add it to the transpose graph
+		for (int tagID : this.getTagIDMap().keySet()) {
+			
+			Tag tag = this.getTagIDMap().get(tagID);
+			Tag tagCopy = tag.makeCopy();
+			tagCopy.setThisGraphTagCount(tagCopy.getHighestLevelGraphTagCount());
+			transposeGraph.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+		}
+		
 		Map<Integer,Vertex> transposeVertices = transposeGraph.getVertices();
 		
 		for (int vertexID : this.vertices.keySet()) {
@@ -1138,8 +1163,17 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		StackExchangeTopicGraph egonet = 
 				new StackExchangeTopicGraph("Egonet for vertex " + center + 
-						" within " + topic); 
-		//TODO: Add tags to egonet
+						" within " + topic);
+		
+		// make a copy of each tag in the parent graph
+		// add it to the egonet but with 0 count for the egonet
+		for (int tagID : this.getTagIDMap().keySet()) {
+			
+			Tag tag = this.getTagIDMap().get(tagID);
+			Tag tagCopy = tag.makeCopy();
+			egonet.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+		}
+
 		//TODO: Should egonet include "spoke" comments and answers?  currently, the egonet
 		// will include answers and comments that "spoke" off of a vertex on a "main" path
 		// between users in the egonet (the "spoke" comments and answers do not lead to 
@@ -1398,7 +1432,6 @@ public class StackExchangeTopicGraph implements Graph {
         // with the tuple "vertexID communityNum")
         ProcessBuilder writeLevelMapping;
 		File levelMappings = new File("Louvain_CPlusPlus/"+topic+"LevelMappings.txt");
-		levelMappings.delete();
         
 		for (int level = 0; level < levels; level++) {
        
@@ -1463,6 +1496,15 @@ public class StackExchangeTopicGraph implements Graph {
 				community =
 						new StackExchangeTopicGraph("Community " + communityID +
 								" of level " + level + " of " + topic);
+				// make a copy of each tag in the parent graph
+				// add it to the community but with 0 count for the community
+				for (int tagID : this.getTagIDMap().keySet()) {
+					
+					Tag tag = this.getTagIDMap().get(tagID);
+					Tag tagCopy = tag.makeCopy();
+					community.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+				}
+				
 				levelCommunities.put(communityID, community);
 			}
 			

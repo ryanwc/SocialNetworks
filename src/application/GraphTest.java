@@ -29,6 +29,7 @@ public class GraphTest {
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
 		
+		/* detect communities test
 		try {
 			graph.detectAndGetCommunities();
 		} catch (IOException e) {
@@ -44,6 +45,7 @@ public class GraphTest {
 				communityMap.get(communityID).printGraph();
 			}
 		}
+		//*/
 		
 		/* Print test
 		graph.printGraph();
