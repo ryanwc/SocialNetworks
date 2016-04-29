@@ -905,7 +905,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	@Override
 	public List<Graph> getSCCs() {
-		//TODO: add tags to each SCC
+
 		Stack<Integer> vertexIDStack = new Stack<Integer>();
 		
 		for (int vertexID : vertices.keySet()) {
@@ -1387,6 +1387,8 @@ public class StackExchangeTopicGraph implements Graph {
 	public void runLouvain(File linkedListFile) throws IOException {
 		
 		File communityMetadata = new File("Louvain_CPlusPlus/"+topic+"communityHierarchyInfo.txt");
+		PrintWriter clearWriter = new PrintWriter(communityMetadata);
+		clearWriter.close();
 		String levelMetadataMarker = "**** starting level info ****";
 		
 		// discover communities and write metadata to text file
@@ -1432,6 +1434,8 @@ public class StackExchangeTopicGraph implements Graph {
         // with the tuple "vertexID communityNum")
         ProcessBuilder writeLevelMapping;
 		File levelMappings = new File("Louvain_CPlusPlus/"+topic+"LevelMappings.txt");
+		clearWriter = new PrintWriter(levelMappings);
+		clearWriter.close();
         
 		for (int level = 0; level < levels; level++) {
        
@@ -1471,14 +1475,21 @@ public class StackExchangeTopicGraph implements Graph {
 		int communityID;
 		StackExchangeTopicGraph community;
 		
-		Map<Integer,StackExchangeTopicGraph> levelCommunities = 
-				new HashMap<Integer,StackExchangeTopicGraph>();
-		levelToCommunities.put(level, levelCommunities);
+		Map<Integer,StackExchangeTopicGraph> levelCommunities;
 		
 		Object[] sortedOriginalIDs = vertices.keySet().toArray();
 		Arrays.sort(sortedOriginalIDs);
 		
 		while ((vertexMapping = levelMappingsReader.readLine()) != null) {
+			
+			// put the a community map in the current level if not there
+			if (!levelToCommunities.containsKey(level)) {
+			
+				levelToCommunities.put(level, 
+						new HashMap<Integer,StackExchangeTopicGraph>());
+			}
+			
+			levelCommunities = levelToCommunities.get(level);
 			
 			String[] vertexAndCommunity = vertexMapping.split(" ");
 			// need to add one because the Louvain method indexes at zero
@@ -1486,13 +1497,14 @@ public class StackExchangeTopicGraph implements Graph {
 			// vertexIDs are not guaranteed to be numbered [1-numVertices]
 			louvainVertexID = Integer.parseInt(vertexAndCommunity[0]);
 			vertexID = (int)sortedOriginalIDs[louvainVertexID];
-			communityID = Integer.parseInt(vertexAndCommunity[1]) + 1;
+			communityID = Integer.parseInt(vertexAndCommunity[1]);
 			
 			if (levelCommunities.containsKey(communityID)) {
 				
 				community = levelCommunities.get(communityID);
 			}
 			else {
+
 				community =
 						new StackExchangeTopicGraph("Community " + communityID +
 								" of level " + level + " of " + topic);
@@ -1516,12 +1528,8 @@ public class StackExchangeTopicGraph implements Graph {
 			community.addVertex(vertexCopy);
 			
 			lineCounter++;
-			
 			// done with this level
-			System.out.println(lineCounter);
 			if (lineCounter % vertices.size() == 0) {
-				
-				System.out.println("done with this level");
 				// is it better to have new var for community here?
 				// add all edges to each community at this level
 				for (int communityNum : levelCommunities.keySet()) {
@@ -1531,8 +1539,6 @@ public class StackExchangeTopicGraph implements Graph {
 				}
 				
 				level++;
-				levelCommunities = new HashMap<Integer,StackExchangeTopicGraph>();
-				levelToCommunities.put(level, levelCommunities);
 			}
 		}
 		
@@ -1716,8 +1722,8 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	public File exportToLinkedListPlainText() throws IOException {
 		
-		File linkedListFile;
-		FileWriter fileWriter = new FileWriter("data/stack_exchange/"+topic+"_LinkedList.txt", false);
+		File linkedListFile = new File("data/stack_exchange/"+topic+"_LinkedList.txt");
+		FileWriter fileWriter = new FileWriter(linkedListFile, false);
 		PrintWriter printWriter = new PrintWriter(fileWriter);
 		
 		// to play nicely with Louvain method, which requires re-indexing to 0
@@ -1743,7 +1749,185 @@ public class StackExchangeTopicGraph implements Graph {
 		printWriter.close();
 		fileWriter.close();
 		
-		linkedListFile = new File("data/stack_exchange/"+topic+"_LinkedList.txt");
 		return linkedListFile;
+	}
+	
+	/** Converts the graph to a format easily fed into regression analysis of 
+	 * drivers of a question's "usefulness" score.
+	 * 
+	 * Variable names are in row 1, each sample is in a subsequent row.
+	 * All values separated by whitespace
+	 * 
+	 * An example graph with four questions and three independent variables:
+	 * 
+	 * Score D1 D2 D3
+	 * 87 2 54 65
+	 * 43 3 23 20
+	 * 2 3 100 15
+	 * 10 1 4 10
+	 * 
+	 * @return a file with version of the graph easily manipulated by a 
+	 * language suited for numerical calculation, like R or MATLAB, for 
+	 * regression analysis of drivers of a question in that graph's 
+	 * "usefulness" score.
+	 * @throws IOException 
+	 */
+	public File exportQuestionUsefulnessRegressionFormat() throws IOException {
+		
+		File regressionQFile = new File("data/stack_exchange/"+topic+"_Regression.txt");
+		FileWriter fileWriter = new FileWriter(regressionQFile, false);
+		PrintWriter printWriter = new PrintWriter(fileWriter);
+		
+		//TODO: make this who method more maintainable
+		double usefulness;
+		
+		int askerReputation, numAskerQuestions, 
+			numAskerAnswers, numAskerCmnts, views, questionCharLength, 
+			numTags, totalTagQuestions, numVertsInEgonet,
+			numVertsInHighestLevelCommunity, numVertsInSCC;
+		
+		int acceptedAnswer; // 0 for no, 1 for yes
+		
+		double usefulnessOfTopAnswer, favoritesPerViews, commentsPerViews, 
+			   answersPerViews, cmntsOnAsToOnQ, avgRepOfAnswerers, 
+			   avgUsefulnessAllAnswers, askerCmntsOnThisQPerViews;
+		
+		printWriter.printf("%s" + "%n", "usefulness askerReputation "
+				+ "usefulnessOfTopAnswer numAskerQuestions numAskwerAnswers "
+				+ "numAskerCmnts views questionCharLength numTags "
+				+ "totalTagQuestions numVertsInEgonet "
+				+ "numVertsInHighestLevelCommunity numVertsInSCC "
+				+ "acceptedAnswer favoritesPerViews commentsPerViews "
+				+ "answersPerViews cmntsOnAsToOnQ avgRepOfAnswerers "
+				+ "avgUsefulnessAllAnswers askerCmntsOnThisQPerViews");
+
+		for (QuestionNode question : this.getQuestions().values()) {
+			
+			UserNode asker = users.get(question.getAuthorUserID());
+			
+			usefulness = question.calculateUsefulness();
+			askerReputation = asker.getReputation();
+			
+			// what if has no answers?  should discard b/c drag average down?
+			usefulnessOfTopAnswer = 0;
+			int cmntsOnAs = 0;
+			int totalRepOfAnswerers = 0;
+			double totalUsefulnessOfAnswers = 0;
+			int askerCmntsOnThisQ = 0;
+			for (AnswerNode answer : question.getAnswers()) {
+				
+				UserNode answerer = users.get(answer.getAuthorUserID());
+				totalRepOfAnswerers += answerer.getReputation();
+				cmntsOnAs += answer.getComments().size();
+				totalUsefulnessOfAnswers += answer.calculateUsefulness();
+				if (answer.calculateUsefulness() > usefulnessOfTopAnswer) {
+					
+					usefulnessOfTopAnswer = answer.calculateUsefulness();
+				}
+				for (CommentNode comment : answer.getComments()) {
+					if (comment.getAuthorUserID() == question.getAuthorUserID()) {
+						askerCmntsOnThisQ++;
+					}
+				}
+			}
+			cmntsOnAsToOnQ = ( ((double)cmntsOnAs) /
+							  ( (double)question.getComments().size() + 
+							    Double.parseDouble(".00001") ) );
+			avgRepOfAnswerers = ( ((double)totalRepOfAnswerers) / 
+								 ((double)question.getAnswers().size()  + 
+							      Double.parseDouble(".00001") ) );
+			avgUsefulnessAllAnswers = totalUsefulnessOfAnswers / 
+									  ((double)question.getAnswers().size()  + 
+									   Double.parseDouble(".00001") );
+			
+			numAskerQuestions = asker.getQuestions().size();
+			numAskerAnswers = asker.getAnswers().size();
+			numAskerCmnts = asker.getComments().size();
+			views = question.getViewCount();
+			questionCharLength = question.getBody().length();
+			numTags = question.getTags().size();
+			
+			totalTagQuestions = 0;
+			for (int tagID : question.getTags()) {
+				
+				totalTagQuestions += tagIDMap.get(tagID).getThisGraphTagCount();
+			}
+			
+			StackExchangeTopicGraph egonet = 
+					(StackExchangeTopicGraph)getEgonet(question.getVertexID());
+			numVertsInEgonet = egonet.getVertices().size();
+			
+			numVertsInHighestLevelCommunity = 0;
+			if (levelToCommunities.size() < 1) {
+				detectAndGetCommunities();
+			}
+			Map<Integer,StackExchangeTopicGraph> highestLevelCommunities = 
+					levelToCommunities.get(levelToCommunities.size()-1);
+			System.out.println(levelToCommunities.size());
+			for (int communityID : highestLevelCommunities.keySet()) {
+				
+				StackExchangeTopicGraph community = 
+						highestLevelCommunities.get(communityID);
+				
+				if (community.getVertices().keySet().
+						contains(question.getVertexID())) {
+					
+					numVertsInHighestLevelCommunity = 
+							community.getVertices().size();
+					break;
+				}
+			}
+			
+			numVertsInSCC = 0;
+			if (SCCList.size() < 1) {
+				getSCCs();
+			}
+			for (int i = 0; i < SCCList.size(); i++) {
+				
+				StackExchangeTopicGraph SCC = 
+						(StackExchangeTopicGraph)SCCList.get(i);
+				
+				if (SCC.getVertices().keySet().contains(question.getVertexID())) {
+					numVertsInSCC = SCC.getVertices().size();
+					break;
+				}
+			}
+			
+			if (question.getAcceptedAnswerId() != null) {
+				acceptedAnswer = 1;
+			}
+			else {
+				acceptedAnswer = 0;
+			}
+			
+			favoritesPerViews = question.calculateFavoritesPerViews();
+			commentsPerViews = question.calculateCommentsPerViews();
+			answersPerViews = question.calculateAnswersPerViews();
+			
+			for (CommentNode comment : question.getComments()) {
+				if (comment.getAuthorUserID() == question.getAuthorUserID()) {
+					askerCmntsOnThisQ++;
+				}
+			}
+			
+			askerCmntsOnThisQPerViews = ((double)askerCmntsOnThisQ) / 
+										((double)views);
+			
+			printWriter.printf("%s" + "%n", usefulness + " " + askerReputation
+					+ " " + usefulnessOfTopAnswer + " " + numAskerQuestions + 
+					" " + numAskerAnswers + " " + numAskerCmnts + " " + views +
+					" " + questionCharLength + " " + numTags + " " +
+					totalTagQuestions + " " + numVertsInEgonet + " " + 
+					numVertsInHighestLevelCommunity + " " + numVertsInSCC + " "
+					+ acceptedAnswer + " " + favoritesPerViews + " " +
+					commentsPerViews + " " + answersPerViews + " " +
+					cmntsOnAsToOnQ + " " + avgRepOfAnswerers + " " +
+					avgUsefulnessAllAnswers + " " + 
+					askerCmntsOnThisQPerViews);
+		}
+		
+		printWriter.close();
+		
+		return regressionQFile;
 	}
 }

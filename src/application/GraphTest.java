@@ -29,6 +29,14 @@ public class GraphTest {
 		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
 		
+		///* regression format export test
+		try {
+			graph.exportQuestionUsefulnessRegressionFormat();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		//*/
+		
 		/* detect communities test
 		try {
 			graph.detectAndGetCommunities();
