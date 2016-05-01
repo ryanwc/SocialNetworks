@@ -44,6 +44,7 @@ public class StackExchangeTopicGraph implements Graph {
 	
 	private List<Graph> SCCList;
 	private Map<Integer,Map<Integer,StackExchangeTopicGraph>> levelToCommunities;
+	private Integer highestLevelCommunity;
 	// should egonets have a map of vertID --> its egonet?
 	
 	// maps from specific node type ID (e.g., userID, postID) 
@@ -82,6 +83,8 @@ public class StackExchangeTopicGraph implements Graph {
 		this.questions = new HashMap<Integer,QuestionNode>();
 		this.answers = new HashMap<Integer,AnswerNode>();
 		this.comments = new HashMap<Integer,CommentNode>();
+		
+		this.highestLevelCommunity = null;
 		
 		this.tagIDMap = new HashMap<Integer,Tag>();
 		this.tagStringMap = new HashMap<String,Tag>();
@@ -734,6 +737,8 @@ public class StackExchangeTopicGraph implements Graph {
 		// same accountID for all dummy users
 		int accountID = -2;
 		
+		//System.out.println("Creating dummy user with id " + vertexID + 
+			//	" and user id " + userID);
 		UserNode user = new UserNode(vertexID, name, userID,reputation, 
 				age, upvotes, downvotes, accountID);
 		
@@ -1161,6 +1166,8 @@ public class StackExchangeTopicGraph implements Graph {
 	@Override
 	public Graph getEgonet(int center) {
 		
+		//System.out.println("Getting egonet for vertex " + center);
+		
 		StackExchangeTopicGraph egonet = 
 				new StackExchangeTopicGraph("Egonet for vertex " + center + 
 						" within " + topic);
@@ -1189,11 +1196,12 @@ public class StackExchangeTopicGraph implements Graph {
 		// all the other posts the author made?
 		// as written, (egonet of post) == (egonet of post's author)
 		if (!(cVertParentGraph instanceof UserNode)) {
-			cVertParentGraph = vertices.get(((Post)cVertParentGraph).
-					getAuthorUserID());
+			//System.out.println("Finding author");
+			cVertParentGraph = users.get(((Post)cVertParentGraph).getAuthorUserID());
 		}
 		
 		// add the center to the egonet
+		//System.out.println("author, so center, is " + cVertParentGraph.getVertexID());
 		Vertex cVertParentGraphCopy = cVertParentGraph.makeCopy();
 		cVertParentGraphCopy.setName(cVertParentGraphCopy.getName()
 				+ " in " + egonet.getTopic());
@@ -1361,7 +1369,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * method no longer increased from the last level.
 	 * @throws IOException 
 	 */
-	public Map<Integer,Map<Integer,StackExchangeTopicGraph>> detectAndGetCommunities() throws IOException {
+	public File exportCommunities() throws IOException {
 		
 		File linkedListFile = null;
 		
@@ -1371,9 +1379,7 @@ public class StackExchangeTopicGraph implements Graph {
 			e.printStackTrace();
 		}
 		
-		runLouvain(linkedListFile);
-
-		return levelToCommunities;
+		return runLouvain(linkedListFile);
 	}
 	
 	/** Run the Louvain method for detecting communities of the given file.
@@ -1384,7 +1390,9 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * @throws IOException 
 	 */
-	public void runLouvain(File linkedListFile) throws IOException {
+	public File runLouvain(File linkedListFile) throws IOException {
+		
+		//System.out.println("running louvain");
 		
 		File communityMetadata = new File("Louvain_CPlusPlus/"+topic+"communityHierarchyInfo.txt");
 		PrintWriter clearWriter = new PrintWriter(communityMetadata);
@@ -1401,7 +1409,10 @@ public class StackExchangeTopicGraph implements Graph {
 		buildCommunityHierarchy.redirectErrorStream(true);
 		buildCommunityHierarchy.redirectOutput(Redirect.to(communityMetadata));
 		
-		buildCommunityHierarchy.start();
+		Process buildingCommunityHierarchy = buildCommunityHierarchy.start();
+		while (buildingCommunityHierarchy.isAlive()) {
+			
+		}
 
 		// read output to determine number of levels
 		InputStream metaDataIn = new FileInputStream(communityMetadata.getAbsolutePath());
@@ -1415,6 +1426,7 @@ public class StackExchangeTopicGraph implements Graph {
         // to get highest level number
         while (metaDataScanner.hasNextLine()) {
         	
+        	//System.out.println("looking for level info");
         	metaDataLine = metaDataScanner.nextLine();
         	
         	if (inLevelMetaData) {
@@ -1429,6 +1441,8 @@ public class StackExchangeTopicGraph implements Graph {
         
         metaDataScanner.close();
         
+        //System.out.println("levels: " + levels);
+        
         // write all level mappings to a single file
         // (a single level mapping contains a line for each vertex 
         // with the tuple "vertexID communityNum")
@@ -1439,15 +1453,21 @@ public class StackExchangeTopicGraph implements Graph {
         
 		for (int level = 0; level < levels; level++) {
        
+			//System.out.println("writing a mapping");
 			writeLevelMapping = 
     				new ProcessBuilder("bash", "-c", 
     						"cd Louvain_CPlusPlus ; "
     							+ "./hierarchy graph.tree -l " + level + " >> " + levelMappings.getName());
     		writeLevelMapping.redirectErrorStream(true);
-    		writeLevelMapping.start();
+    		Process writeLevelMappingProcess = writeLevelMapping.start();
+    		while (writeLevelMappingProcess.isAlive()) {
+    			
+    		}
         }
 		
-		buildLevelToCommunityMap(levelMappings);
+		highestLevelCommunity = levels-1;
+		
+		return levelMappings;
 	}
 	
 	/** Populate this graph's communities with the file output
@@ -1462,13 +1482,14 @@ public class StackExchangeTopicGraph implements Graph {
 	 * by running the Louvain method on this graph.
 	 * @throws IOException 
 	 */
-	public void buildLevelToCommunityMap(File levelMappings) throws IOException {
+	public void buildLevelToCommunityMap(File levelMappings, int level) throws IOException {
 		
 		InputStream levelMappingsIn = new FileInputStream(levelMappings.getAbsolutePath()); 
 		BufferedReader levelMappingsReader = new BufferedReader(new InputStreamReader(levelMappingsIn));
 		
 		String vertexMapping = "";
-		int level = 0;
+		// only build given level
+		int thisLevel = 0;
 		int lineCounter = 0;
 		int vertexID;
 		int louvainVertexID;
@@ -1482,63 +1503,79 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		while ((vertexMapping = levelMappingsReader.readLine()) != null) {
 			
-			// put the a community map in the current level if not there
-			if (!levelToCommunities.containsKey(level)) {
+			//System.out.println("in level " + thisLevel);
+			//System.out.println(vertexMapping);
 			
-				levelToCommunities.put(level, 
-						new HashMap<Integer,StackExchangeTopicGraph>());
-			}
-			
-			levelCommunities = levelToCommunities.get(level);
-			
-			String[] vertexAndCommunity = vertexMapping.split(" ");
-			// need to add one because the Louvain method indexes at zero
-			// will not work for egonets, SCCs, or for other graphs where 
-			// vertexIDs are not guaranteed to be numbered [1-numVertices]
-			louvainVertexID = Integer.parseInt(vertexAndCommunity[0]);
-			vertexID = (int)sortedOriginalIDs[louvainVertexID];
-			communityID = Integer.parseInt(vertexAndCommunity[1]);
-			
-			if (levelCommunities.containsKey(communityID)) {
+			if (thisLevel == level) {
 				
-				community = levelCommunities.get(communityID);
+				String[] vertexAndCommunity = vertexMapping.split(" ");
+				communityID = Integer.parseInt(vertexAndCommunity[1]);
+				// need to add one because the Louvain method indexes at zero
+				// will not work for egonets, SCCs, or for other graphs where 
+				// vertexIDs are not guaranteed to be numbered [1-numVertices]
+				louvainVertexID = Integer.parseInt(vertexAndCommunity[0]);
+				vertexID = (int)sortedOriginalIDs[louvainVertexID];
+				
+				// everything should go here
+				
+				// put the a community map in the current level if not there
+				if (!levelToCommunities.containsKey(thisLevel)) {
+				
+					levelToCommunities.put(thisLevel, 
+							new HashMap<Integer,StackExchangeTopicGraph>());
+				}
+				
+				levelCommunities = levelToCommunities.get(thisLevel);
+				
+				
+				if (levelCommunities.containsKey(communityID)) {
+					
+					community = levelCommunities.get(communityID);
+				}
+				else {
+
+					community =
+							new StackExchangeTopicGraph("Community " + communityID +
+									" of level " + thisLevel + " of " + topic);
+					// make a copy of each tag in the parent graph
+					// add it to the community but with 0 count for the community
+					for (int tagID : this.getTagIDMap().keySet()) {
+						
+						
+						Tag tag = this.getTagIDMap().get(tagID);
+						Tag tagCopy = tag.makeCopy();
+						community.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+					}
+					
+					levelCommunities.put(communityID, community);
+				}
+				
+				Vertex parentVertex = vertices.get(vertexID);
+				Vertex vertexCopy = parentVertex.makeCopy();
+				vertexCopy.setName(vertexCopy.getName()
+						+ " in " + community.getTopic());
+				
+				community.addVertex(vertexCopy);
+				
+				lineCounter++;
+				// done with this level
+				if (lineCounter % vertices.size() == 0) {
+					// is it better to have new var for community here?
+					// add all edges to each community at this level
+					for (int communityNum : levelCommunities.keySet()) {
+						
+						community = levelCommunities.get(communityNum);
+						community.addAllEdges();
+					}
+					
+					thisLevel++;
+				}
 			}
 			else {
-
-				community =
-						new StackExchangeTopicGraph("Community " + communityID +
-								" of level " + level + " of " + topic);
-				// make a copy of each tag in the parent graph
-				// add it to the community but with 0 count for the community
-				for (int tagID : this.getTagIDMap().keySet()) {
-					
-					Tag tag = this.getTagIDMap().get(tagID);
-					Tag tagCopy = tag.makeCopy();
-					community.getTagIDMap().put(tagCopy.getTagID(), tagCopy);
+				lineCounter++;
+				if (lineCounter % vertices.size() == 0) {
+					thisLevel++;
 				}
-				
-				levelCommunities.put(communityID, community);
-			}
-			
-			Vertex parentVertex = vertices.get(vertexID);
-			Vertex vertexCopy = parentVertex.makeCopy();
-			vertexCopy.setName(vertexCopy.getName()
-					+ " in " + community.getTopic());
-			
-			community.addVertex(vertexCopy);
-			
-			lineCounter++;
-			// done with this level
-			if (lineCounter % vertices.size() == 0) {
-				// is it better to have new var for community here?
-				// add all edges to each community at this level
-				for (int communityNum : levelCommunities.keySet()) {
-					
-					community = levelCommunities.get(communityNum);
-					community.addAllEdges();
-				}
-				
-				level++;
 			}
 		}
 		
@@ -1783,149 +1820,152 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		int askerReputation, numAskerQuestions, 
 			numAskerAnswers, numAskerCmnts, views, questionCharLength, 
-			numTags, totalTagQuestions, numVertsInEgonet,
-			numVertsInHighestLevelCommunity, numVertsInSCC;
+			numTags, numVertsInEgonet,
+			numVertsInHighestLevelCommunity;
 		
 		int acceptedAnswer; // 0 for no, 1 for yes
 		
-		double usefulnessOfTopAnswer, favoritesPerViews, commentsPerViews, 
-			   answersPerViews, cmntsOnAsToOnQ, avgRepOfAnswerers, 
-			   avgUsefulnessAllAnswers, askerCmntsOnThisQPerViews;
+		double avgTagQuestions, usefulnessOfTopAnswer, favoritesPerViews, 
+			   cmntsPerViews, answersPerViews,
+			   avgRepOfAnswerers, avgUsefulnessAllAnswers, 
+			   askerCmntsOnThisQPerViews;
 		
 		printWriter.printf("%s" + "%n", "usefulness askerReputation "
-				+ "usefulnessOfTopAnswer numAskerQuestions numAskwerAnswers "
-				+ "numAskerCmnts views questionCharLength numTags "
-				+ "totalTagQuestions numVertsInEgonet "
-				+ "numVertsInHighestLevelCommunity numVertsInSCC "
-				+ "acceptedAnswer favoritesPerViews commentsPerViews "
-				+ "answersPerViews cmntsOnAsToOnQ avgRepOfAnswerers "
+				+ "usefulnessOfTopAnswer numAskerQuestions numAskerAnswers "
+				+ "numAskerCmnts questionCharLength numTags "
+				+ "avgTagQuestions numVertsInEgonet "
+				+ "numVertsInHighestLevelCommunity "
+				+ "acceptedAnswer favoritesPerViews cmntsPerViews "
+				+ "answersPerViews avgRepOfAnswerers "
 				+ "avgUsefulnessAllAnswers askerCmntsOnThisQPerViews");
 
+		int numAccepted = 0;
+		int numNotAccepted = 0;
+		
 		for (QuestionNode question : this.getQuestions().values()) {
 			
-			UserNode asker = users.get(question.getAuthorUserID());
+			// discard if has no answers
 			
-			usefulness = question.calculateUsefulness();
-			askerReputation = asker.getReputation();
+			if (question.getAnswers().size() > 0) {
 			
-			// what if has no answers?  should discard b/c drag average down?
-			usefulnessOfTopAnswer = 0;
-			int cmntsOnAs = 0;
-			int totalRepOfAnswerers = 0;
-			double totalUsefulnessOfAnswers = 0;
-			int askerCmntsOnThisQ = 0;
-			for (AnswerNode answer : question.getAnswers()) {
+				UserNode asker = users.get(question.getAuthorUserID());
+			
+				usefulness = question.calculateUsefulness();
+				askerReputation = asker.getReputation();
+			
+				usefulnessOfTopAnswer = 0;
+				int totalRepOfAnswerers = 0;
+				double totalUsefulnessOfAnswers = 0;
+				int askerCmntsOnThisQ = 0;
+				for (AnswerNode answer : question.getAnswers()) {
 				
-				UserNode answerer = users.get(answer.getAuthorUserID());
-				totalRepOfAnswerers += answerer.getReputation();
-				cmntsOnAs += answer.getComments().size();
-				totalUsefulnessOfAnswers += answer.calculateUsefulness();
-				if (answer.calculateUsefulness() > usefulnessOfTopAnswer) {
+					UserNode answerer = users.get(answer.getAuthorUserID());
+					totalRepOfAnswerers += answerer.getReputation();
+					totalUsefulnessOfAnswers += answer.calculateUsefulness();
+					if (answer.calculateUsefulness() > usefulnessOfTopAnswer) {
 					
-					usefulnessOfTopAnswer = answer.calculateUsefulness();
+						usefulnessOfTopAnswer = answer.calculateUsefulness();
+					}
+					for (CommentNode comment : answer.getComments()) {
+						if (comment.getAuthorUserID() == question.getAuthorUserID()) {
+							askerCmntsOnThisQ++;
+						}
+					}
 				}
-				for (CommentNode comment : answer.getComments()) {
+				avgRepOfAnswerers = ( ((double)totalRepOfAnswerers) / 
+						((double)question.getAnswers().size()  + 
+								Double.parseDouble(".00001") ) );
+				avgUsefulnessAllAnswers = totalUsefulnessOfAnswers / 
+						((double)question.getAnswers().size()  + 
+								Double.parseDouble(".00001") );
+			
+				// possibly colinear with SCC/egonet/community size
+				numAskerQuestions = asker.getQuestions().size();
+				numAskerAnswers = asker.getAnswers().size();
+				numAskerCmnts = asker.getComments().size();
+				//
+			
+				views = question.getViewCount();
+				questionCharLength = question.getBody().length();
+				numTags = question.getTags().size();
+			
+				int totalTagQuestions = 0;
+				for (int tagID : question.getTags()) {
+				
+					totalTagQuestions += tagIDMap.get(tagID).getThisGraphTagCount();
+				}
+			
+				avgTagQuestions = ((double)totalTagQuestions) / 
+						((double)question.getTags().size());
+			
+				StackExchangeTopicGraph egonet = 
+						(StackExchangeTopicGraph)getEgonet(question.getVertexID());
+				numVertsInEgonet = egonet.getVertices().size();
+			
+				numVertsInHighestLevelCommunity = 0;
+				// clean this up
+				if (!levelToCommunities.containsKey(highestLevelCommunity)) {
+				
+					File levelMappings = exportCommunities();
+					buildLevelToCommunityMap(levelMappings, highestLevelCommunity);
+					//System.out.println("finished building: " + highestLevelCommunity +
+						//	" is highest level community");
+				}
+				Map<Integer,StackExchangeTopicGraph> highestLevelCommunities = 
+						levelToCommunities.get(highestLevelCommunity);
+				for (int communityID : highestLevelCommunities.keySet()) {
+				
+					StackExchangeTopicGraph community = 
+							highestLevelCommunities.get(communityID);
+				
+					if (community.getVertices().keySet().
+							contains(question.getVertexID())) {
+					
+						numVertsInHighestLevelCommunity = 
+								community.getVertices().size();
+						break;
+					}
+				}
+			
+				// should this be numAnswers instead?
+				if (question.getAcceptedAnswerId() != null) {
+					acceptedAnswer = 1;
+					numAccepted++;
+				}
+				else {
+					acceptedAnswer = 0;
+					numNotAccepted++;
+				}
+			
+				favoritesPerViews = question.calculateFavoritesPerViews();
+				cmntsPerViews = question.calculateCommentsPerViews();
+				answersPerViews = question.calculateAnswersPerViews();
+			
+				for (CommentNode comment : question.getComments()) {
 					if (comment.getAuthorUserID() == question.getAuthorUserID()) {
 						askerCmntsOnThisQ++;
 					}
 				}
+			
+				askerCmntsOnThisQPerViews = ((double)askerCmntsOnThisQ) / 
+						((double)views);
+			
+				printWriter.printf("%s" + "%n", usefulness + " " + askerReputation
+						+ " " + usefulnessOfTopAnswer + " " + numAskerQuestions + 
+						" " + numAskerAnswers + " " + numAskerCmnts + " " +
+						questionCharLength + " " + numTags + " " +
+						avgTagQuestions + " " + numVertsInEgonet + " " + 
+						numVertsInHighestLevelCommunity + " "
+						+ acceptedAnswer + " " + favoritesPerViews + " " +
+						cmntsPerViews + " " + answersPerViews + " " +
+						avgRepOfAnswerers + " " + avgUsefulnessAllAnswers + " " + 
+						askerCmntsOnThisQPerViews);
 			}
-			cmntsOnAsToOnQ = ( ((double)cmntsOnAs) /
-							  ( (double)question.getComments().size() + 
-							    Double.parseDouble(".00001") ) );
-			avgRepOfAnswerers = ( ((double)totalRepOfAnswerers) / 
-								 ((double)question.getAnswers().size()  + 
-							      Double.parseDouble(".00001") ) );
-			avgUsefulnessAllAnswers = totalUsefulnessOfAnswers / 
-									  ((double)question.getAnswers().size()  + 
-									   Double.parseDouble(".00001") );
-			
-			numAskerQuestions = asker.getQuestions().size();
-			numAskerAnswers = asker.getAnswers().size();
-			numAskerCmnts = asker.getComments().size();
-			views = question.getViewCount();
-			questionCharLength = question.getBody().length();
-			numTags = question.getTags().size();
-			
-			totalTagQuestions = 0;
-			for (int tagID : question.getTags()) {
-				
-				totalTagQuestions += tagIDMap.get(tagID).getThisGraphTagCount();
-			}
-			
-			StackExchangeTopicGraph egonet = 
-					(StackExchangeTopicGraph)getEgonet(question.getVertexID());
-			numVertsInEgonet = egonet.getVertices().size();
-			
-			numVertsInHighestLevelCommunity = 0;
-			if (levelToCommunities.size() < 1) {
-				detectAndGetCommunities();
-			}
-			Map<Integer,StackExchangeTopicGraph> highestLevelCommunities = 
-					levelToCommunities.get(levelToCommunities.size()-1);
-			System.out.println(levelToCommunities.size());
-			for (int communityID : highestLevelCommunities.keySet()) {
-				
-				StackExchangeTopicGraph community = 
-						highestLevelCommunities.get(communityID);
-				
-				if (community.getVertices().keySet().
-						contains(question.getVertexID())) {
-					
-					numVertsInHighestLevelCommunity = 
-							community.getVertices().size();
-					break;
-				}
-			}
-			
-			numVertsInSCC = 0;
-			if (SCCList.size() < 1) {
-				getSCCs();
-			}
-			for (int i = 0; i < SCCList.size(); i++) {
-				
-				StackExchangeTopicGraph SCC = 
-						(StackExchangeTopicGraph)SCCList.get(i);
-				
-				if (SCC.getVertices().keySet().contains(question.getVertexID())) {
-					numVertsInSCC = SCC.getVertices().size();
-					break;
-				}
-			}
-			
-			if (question.getAcceptedAnswerId() != null) {
-				acceptedAnswer = 1;
-			}
-			else {
-				acceptedAnswer = 0;
-			}
-			
-			favoritesPerViews = question.calculateFavoritesPerViews();
-			commentsPerViews = question.calculateCommentsPerViews();
-			answersPerViews = question.calculateAnswersPerViews();
-			
-			for (CommentNode comment : question.getComments()) {
-				if (comment.getAuthorUserID() == question.getAuthorUserID()) {
-					askerCmntsOnThisQ++;
-				}
-			}
-			
-			askerCmntsOnThisQPerViews = ((double)askerCmntsOnThisQ) / 
-										((double)views);
-			
-			printWriter.printf("%s" + "%n", usefulness + " " + askerReputation
-					+ " " + usefulnessOfTopAnswer + " " + numAskerQuestions + 
-					" " + numAskerAnswers + " " + numAskerCmnts + " " + views +
-					" " + questionCharLength + " " + numTags + " " +
-					totalTagQuestions + " " + numVertsInEgonet + " " + 
-					numVertsInHighestLevelCommunity + " " + numVertsInSCC + " "
-					+ acceptedAnswer + " " + favoritesPerViews + " " +
-					commentsPerViews + " " + answersPerViews + " " +
-					cmntsOnAsToOnQ + " " + avgRepOfAnswerers + " " +
-					avgUsefulnessAllAnswers + " " + 
-					askerCmntsOnThisQPerViews);
+		
 		}
 		
+		System.out.println("num accepted " + numAccepted);
+		System.out.println("num not accepted " + numNotAccepted);
 		printWriter.close();
 		
 		return regressionQFile;

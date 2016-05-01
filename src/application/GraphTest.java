@@ -23,11 +23,11 @@ public class GraphTest {
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
 		//GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
-		//StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Buddhism");
-		//GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/buddhism.stackexchange.com/");
+		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Buddhism");
+		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/buddhism.stackexchange.com/");
 		
-		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
-		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
+		//StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
+		//GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
 		
 		///* regression format export test
 		try {
@@ -118,8 +118,7 @@ public class GraphTest {
 		}
 		//*/
 		
-		/*
-		//SCCs test
+		/*SCCs test
 		List<Graph> SCCs = testGraph.getSCCs();
 		for (Graph graph : SCCs) {
 			((CapGraph)graph).printGraph();
