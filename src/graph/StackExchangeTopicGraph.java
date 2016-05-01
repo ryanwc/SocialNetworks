@@ -549,8 +549,19 @@ public class StackExchangeTopicGraph implements Graph {
 				getNamedItem("UpVotes").getNodeValue());
 		int downVotes = Integer.parseInt(nodeAttributes.
 				getNamedItem("DownVotes").getNodeValue());
-		int accountID = Integer.parseInt(nodeAttributes.
-				getNamedItem("AccountId").getNodeValue());
+		
+		int accountID;
+		if (nodeAttributes.getNamedItem("AccountId") == null) {
+			// not sure how a user could not have an account but Stack Exchange
+			// topic "Programmers" user 196327 has no account so we have to 
+			// deal with it.  note: -1 is the community account and -2 is the
+			// dummy user account
+			accountID = -3;
+		}
+		else {
+			accountID = Integer.parseInt(nodeAttributes.
+					getNamedItem("AccountId").getNodeValue());
+		}
 		
 		if (vertices.containsKey(vertexID)) {
 			throw new IllegalArgumentException("Graph already contains "
