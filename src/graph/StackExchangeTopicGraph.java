@@ -1741,11 +1741,35 @@ public class StackExchangeTopicGraph implements Graph {
 	 */
 	public void printStats() {
 		
+		int usersAtLeastOnePost = 0;
+		double prctUsersAtLeastOnePost;
+		for (UserNode user : users.values()) {
+			if (user.getQuestions().size() > 0 ||
+				user.getAnswers().size() > 0 ||
+				user.getComments().size() > 0) {
+				usersAtLeastOnePost++;
+			}
+		}
+		prctUsersAtLeastOnePost = ((double)usersAtLeastOnePost) / users.size();
+		
+		int QsAtLeastOneA = 0;
+		double prctQsAtLeastOneA;
+		for (QuestionNode question : questions.values()) {
+			if (question.getAnswers().size() > 0) {
+				QsAtLeastOneA++;
+			}
+		}
+		prctQsAtLeastOneA = ((double)QsAtLeastOneA) / questions.size();
+		
 		System.out.println("********************");
 		System.out.println("Pertinent stats for graph " + topic + ":");
 		System.out.println("Num vertices: " + vertices.size());
 		System.out.println("Num users: " + users.size());
+		System.out.println("Prct Users at Least One Post: " +
+				prctUsersAtLeastOnePost);
 		System.out.println("Num questions: " + questions.size());
+		System.out.println("Prct Qs at Least One A: " +
+				prctQsAtLeastOneA);
 		System.out.println("Num answers: " + answers.size());
 		System.out.println("Num comments: " + comments.size());
 		System.out.println("Num tags: " + tagIDMap.size());
@@ -1986,8 +2010,6 @@ public class StackExchangeTopicGraph implements Graph {
 		
 		}
 		
-		System.out.println("num accepted " + numAccepted);
-		System.out.println("num not accepted " + numNotAccepted);
 		printWriter.close();
 		
 		return regressionQFile;

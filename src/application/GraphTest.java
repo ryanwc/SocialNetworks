@@ -23,13 +23,13 @@ public class GraphTest {
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
 		//GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
-		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("Buddhism");
-		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/buddhism.stackexchange.com/");
+		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("HardwareRecs");
+		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/hardwarerecs.stackexchange.com/");
 		
 		//StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		//GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
 		
-		///* regression format export test
+		/* regression format export test
 		try {
 			graph.exportQuestionUsefulnessRegressionFormat();
 		} catch (IOException e) {
@@ -55,8 +55,9 @@ public class GraphTest {
 		}
 		//*/
 		
-		/* Print test
+		///* Print test
 		graph.printGraph();
+		graph.printStats();
 		//*/
 		
 		/* SCC test
