@@ -68,6 +68,11 @@ public class StackExchangeTopicGraph implements Graph {
 	// (ensuring unique IDs like this seems fragile)
 	private int uniqueVertexIDCounter = 1;
 	
+	// maps to true if this postID is disallowed
+	// (e.g., not a question or answer)
+	// better data structure for this? a list would not offer constant lookup
+	private Map<Integer,Boolean> disallowedPosts;
+	
 	public StackExchangeTopicGraph() {
 		
 		this("Default Topic Name");
@@ -92,6 +97,7 @@ public class StackExchangeTopicGraph implements Graph {
 		this.SCCList = new ArrayList<Graph>();
 		this.levelToCommunities = 
 				new HashMap<Integer,Map<Integer,StackExchangeTopicGraph>>();
+		this.disallowedPosts = new HashMap<Integer,Boolean>();
 	}
 	
 	/** Add a vertex with dummy info to the graph.
@@ -231,7 +237,11 @@ public class StackExchangeTopicGraph implements Graph {
 					+ "answer, comment, or user.");
 		}
 		
-		addVertex(vertex);
+		// originally to protect against adding a comment with a
+		// disallowed parent post (create comment will return null)
+		if (vertex != null) {
+			addVertex(vertex);
+		}
 	}
 	
 	/** Create a QuestionNode with data from a DOM Node.
@@ -454,8 +464,12 @@ public class StackExchangeTopicGraph implements Graph {
 		int parentPostID = Integer.parseInt(nodeAttributes.
 				getNamedItem("PostId").getNodeValue());
 		
-		if (!answers.containsKey(parentPostID) &&
-			!questions.containsKey(parentPostID)) {
+		if (disallowedPosts.containsKey(parentPostID)) {
+			
+			return null;
+		}
+		else if (!answers.containsKey(parentPostID) &&
+			     !questions.containsKey(parentPostID)) {
 			throw new IllegalArgumentException("Parent post node must "
 					+ "be added to the graph before child comment node.");
 		}
@@ -1645,6 +1659,14 @@ public class StackExchangeTopicGraph implements Graph {
 		else {
 			return SCCList;
 		}
+	}
+	
+	public Map<Integer,Boolean> getDisallowedPosts() {
+		return disallowedPosts;
+	}
+	
+	public void setDisallowedPosts(Map<Integer,Boolean> disallowedPosts) {
+		this.disallowedPosts = disallowedPosts;
 	}
 	
 	/** Return a version of the map that is potentially more friendly 

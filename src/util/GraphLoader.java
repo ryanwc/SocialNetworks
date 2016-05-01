@@ -183,6 +183,12 @@ public class GraphLoader {
 					graph.addVertex(graph.getUniqueVertexIDCounter(), 
 							post, StackExchangeTopicGraph.QUESTION);
 				}
+				else if (post.getNodeType() != 2) {
+					// disallow if not a question or answer
+					graph.getDisallowedPosts().put(Integer.parseInt(
+							post.getAttributes().getNamedItem("Id").getNodeValue()),
+							true);
+				}
 			}
 		}
 	}
