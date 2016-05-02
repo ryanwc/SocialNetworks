@@ -1772,14 +1772,20 @@ public class StackExchangeTopicGraph implements Graph {
 		}
 		prctQsAtLeastOneA = ((double)QsAtLeastOneA) / questions.size();
 		
+		int numUndirectedEdges = 0;
+		numUndirectedEdges += comments.size()*2;
+		numUndirectedEdges += answers.size()*2;
+		numUndirectedEdges += questions.size();
+		
 		System.out.println("********************");
 		System.out.println("Pertinent stats for graph " + topic + ":");
 		System.out.println("Num vertices: " + vertices.size());
+		System.out.println("Num undirected edges: " + numUndirectedEdges);
 		System.out.println("Num users: " + users.size());
-		System.out.println("Prct Users at Least One Post: " +
+		System.out.println("Prct users at least one post: " +
 				prctUsersAtLeastOnePost);
 		System.out.println("Num questions: " + questions.size());
-		System.out.println("Prct Qs at Least One A: " +
+		System.out.println("Prct Qs at least one A: " +
 				prctQsAtLeastOneA);
 		System.out.println("Num answers: " + answers.size());
 		System.out.println("Num comments: " + comments.size());
@@ -1846,8 +1852,8 @@ public class StackExchangeTopicGraph implements Graph {
 		return linkedListFile;
 	}
 	
-	/** Converts the graph to a format easily fed into regression analysis of 
-	 * drivers of a question's "usefulness" score.
+	/** Converts the graph to a format easily fed into regression analysis 
+	 * a question's "usefulness" score.
 	 * 
 	 * Variable names are in row 1, each sample is in a subsequent row.
 	 * All values separated by whitespace
@@ -1862,8 +1868,7 @@ public class StackExchangeTopicGraph implements Graph {
 	 * 
 	 * @return a file with version of the graph easily manipulated by a 
 	 * language suited for numerical calculation, like R or MATLAB, for 
-	 * regression analysis of drivers of a question in that graph's 
-	 * "usefulness" score.
+	 * regression analysis a question in that graph's "usefulness" score.
 	 * @throws IOException 
 	 */
 	public File exportQuestionUsefulnessRegressionFormat() throws IOException {
@@ -1872,7 +1877,7 @@ public class StackExchangeTopicGraph implements Graph {
 		FileWriter fileWriter = new FileWriter(regressionQFile, false);
 		PrintWriter printWriter = new PrintWriter(fileWriter);
 		
-		//TODO: make this who method more maintainable
+		//TODO: make this whole method more maintainable
 		double usefulness;
 		
 		int askerReputation, numAskerQuestions, 
@@ -1896,8 +1901,8 @@ public class StackExchangeTopicGraph implements Graph {
 				+ "answersPerViews avgRepOfAnswerers "
 				+ "avgUsefulnessAllAnswers askerCmntsOnThisQPerViews");
 
-		int numAccepted = 0;
-		int numNotAccepted = 0;
+		//int numAccepted = 0;
+		//int numNotAccepted = 0;
 		
 		for (QuestionNode question : this.getQuestions().values()) {
 			
@@ -1987,11 +1992,11 @@ public class StackExchangeTopicGraph implements Graph {
 				// should this be numAnswers instead?
 				if (question.getAcceptedAnswerId() != null) {
 					acceptedAnswer = 1;
-					numAccepted++;
+					//numAccepted++;
 				}
 				else {
 					acceptedAnswer = 0;
-					numNotAccepted++;
+					//numNotAccepted++;
 				}
 			
 				favoritesPerViews = question.calculateFavoritesPerViews();

@@ -23,8 +23,8 @@ public class GraphTest {
 		//GraphLoader.loadGraph(testGraph, "data/facebook_ucsd.txt");
 		//GraphLoader.loadGraph(testGraph, "data/small_test_graph.txt");
 		
-		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("HardwareRecs");
-		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/hardwarerecs.stackexchange.com/");
+		StackExchangeTopicGraph graph = new StackExchangeTopicGraph("DBA");
+		GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/dba.stackexchange.com/");
 		
 		//StackExchangeTopicGraph graph = new StackExchangeTopicGraph("TestGraph1");
 		//GraphLoader.populateStackExchangeTopicGraph(graph, "data/stack_exchange/TestGraph1/");
@@ -55,8 +55,11 @@ public class GraphTest {
 		}
 		//*/
 		
-		///* Print test
+		/* Print graph test
 		graph.printGraph();
+		//*/
+		
+		///* Print stats test
 		graph.printStats();
 		//*/
 		
